@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crop Cycle Details - AgriPredict</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @media (max-width: 850px) {
+      .expense-split-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+
+  <div class="container">
+    <div id="alert-container"></div>
+
+    <!-- Cycle Details Header Card -->
+    <div class="table-card" style="padding:1.5rem; margin-bottom:1.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+        <div>
+          <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.25rem;">
+            <a href="/ui/dashboard" style="color:var(--primary); text-decoration:none;">&larr; Back to Dashboard</a>
+          </div>
+          <h1 id="cycle-title" style="font-size:1.8rem; font-weight:800; color:#0f172a;">Loading Cycle...</h1>
+          <div id="cycle-subtitle" style="font-size:0.95rem; color:var(--text-muted);">Plot Details</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span id="cycle-status-badge" class="badge">Loading</span>
+          <button type="button" id="open-close-modal-btn" class="btn btn-danger btn-sm" onclick="openCloseModal()" style="display:none;">
+            🔒 Close Cycle
+          </button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="margin-top:1.5rem; margin-bottom:0.5rem;">
+        <div class="kpi-card">
+          <span class="kpi-label">Sown Date</span>
+          <span class="kpi-value" id="kpi-sown" style="font-size:1.15rem;">—</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Expected Harvest</span>
+          <span class="kpi-value" id="kpi-expected" style="font-size:1.15rem;">—</span>
+        </div>
+        <div class="kpi-card kpi-expense">
+          <span class="kpi-label">Total Expenses</span>
+          <span class="kpi-value" id="kpi-expenses" style="font-size:1.35rem;">₹0.00</span>
+        </div>
+        <div class="kpi-card kpi-revenue">
+          <span class="kpi-label">Harvest Yield</span>
+          <span class="kpi-value" id="kpi-yield" style="font-size:1.35rem;">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Growth Stages Calendar Timeline Section -->
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">📅 Growth Stages Calendar & Tasks</h2>
+        <p class="section-subtitle">Real-time stage timeline from crop_calendar_view with tasks and dates</p>
+      </div>
+    </div>
+
+    <div class="table-card" style="padding:1.5rem; margin-bottom:1.5rem;">
+      <div id="calendar-timeline-container">
+        <div class="empty-state">
+          <p>Loading growth stages calendar...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expenses Management Section -->
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">💸 Crop Expenses & Spend Breakdown</h2>
+        <p class="section-subtitle">Category analytics from cycle_expense_summary_view and itemized input logs</p>
+      </div>
+      <button type="button" id="add-expense-btn" class="btn btn-primary btn-sm" onclick="openExpenseModal()">
+        + Record Expense
+      </button>
+    </div>
+
+    <div class="expense-split-grid" style="display: grid; grid-template-columns: minmax(320px, 1fr) 1.5fr; gap: 1.25rem; margin-bottom: 2rem;">
+      <!-- Donut Chart Card -->
+      <div class="chart-card" style="margin-bottom:0;">
+        <div class="chart-title">
+          <span>🍩 Spend by Category</span>
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">Cycle summary</span>
+        </div>
+        <div class="chart-wrapper" style="height: 240px; display: flex; align-items: center; justify-content: center;">
+          <div id="cycle-expense-empty-chart" style="display:none; flex-direction:column; align-items:center; color:var(--text-muted); font-size:0.85rem; text-align:center;">
+            <span style="font-size:2rem; margin-bottom:0.25rem;">📊</span>
+            No expenses recorded yet.
+          </div>
+          <canvas id="cycleExpenseDonutChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Itemized Expenses Table Card -->
+      <div class="table-card" style="margin-bottom:0;">
+        <div class="table-wrapper" style="max-height: 280px; overflow-y: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Notes</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="expenses-tbody">
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                  Loading expenses...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cycle Status Log Section -->
+    <div class="section-header" style="margin-top:2rem;">
+      <div>
+        <h2 class="section-title">📜 Status Audit Log</h2>
+        <p class="section-subtitle">Audit trail of status transitions from crop_cycle_log</p>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Log ID</th>
+              <th>Previous Status</th>
+              <th>New Status</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="log-tbody">
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                Loading audit trail...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 1: Add Expense -->
+  <div id="expense-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Record Expense</h3>
+        <button type="button" class="modal-close" onclick="UI.closeModal('expense-modal')">&times;</button>
+      </div>
+      <form id="expense-form">
+        <div class="modal-body">
+          <div id="expense-modal-alert"></div>
+          <div class="form-group">
+            <label class="form-label" for="expense-cat">Category *</label>
+            <select id="expense-cat" class="form-control" required>
+              <option value="Seeds">Seeds</option>
+              <option value="Fertilizer">Fertilizer</option>
+              <option value="Pesticide">Pesticide</option>
+              <option value="Labour">Labour</option>
+              <option value="Irrigation">Irrigation</option>
+              <option value="Machinery">Machinery</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="expense-amt">Amount (₹) *</label>
+            <input type="number" step="0.01" min="0" id="expense-amt" class="form-control" placeholder="e.g. 2500" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="expense-date">Expense Date *</label>
+            <input type="date" id="expense-date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="expense-notes">Notes / Details</label>
+            <input type="text" id="expense-notes" class="form-control" placeholder="e.g. 2 bags of Urea 50kg" maxlength="200">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('expense-modal')">Cancel</button>
+          <button type="submit" id="save-expense-btn" class="btn btn-primary">Save Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Close Cycle -->
+  <div id="close-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Close Crop Cycle</h3>
+        <button type="button" class="modal-close" onclick="UI.closeModal('close-modal')">&times;</button>
+      </div>
+      <form id="close-form">
+        <div class="modal-body">
+          <div id="close-modal-alert"></div>
+          <div class="form-group">
+            <label class="form-label">Cycle Outcome *</label>
+            <div style="display:flex; gap:1.5rem; margin-top:0.35rem;">
+              <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
+                <input type="radio" name="close-outcome" value="Harvested" checked onchange="toggleCloseInputs()">
+                <strong>Harvested (Successful)</strong>
+              </label>
+              <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
+                <input type="radio" name="close-outcome" value="Failed" onchange="toggleCloseInputs()">
+                <strong>Crop Failed</strong>
+              </label>
+            </div>
+          </div>
+
+          <div id="harvested-fields">
+            <div class="form-group">
+              <label class="form-label" for="yield-kg">Total Harvest Yield (in kg) *</label>
+              <input type="number" step="0.1" min="0" id="yield-kg" class="form-control" placeholder="e.g. 4500">
+              <small style="color:var(--text-muted); font-size:0.75rem;">Required when status is Harvested.</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="price-qtl">Selling Price per Quintal (₹)</label>
+              <input type="number" step="0.1" min="0" id="price-qtl" class="form-control" placeholder="e.g. 2200 (100 kg = 1 Quintal)">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('close-modal')">Cancel</button>
+          <button type="submit" id="confirm-close-btn" class="btn btn-danger">Confirm Close Cycle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script>
+    let currentCycleId = null;
+    let cycleExpenseChartInstance = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (!UI.requireAuth()) return;
+      UI.renderNavbar("dashboard");
+
+      const urlParams = new URLSearchParams(window.location.search);
+      currentCycleId = urlParams.get("id");
+
+      if (!currentCycleId) {
+        UI.showAlert("alert-container", "No cycle ID specified in URL.");
+        return;
+      }
+
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("expense-date").value = today;
+
+      await loadCycleDetails();
+      await loadCalendar();
+      await loadExpenses();
+      await loadAuditLog();
+
+      document.getElementById("expense-form").addEventListener("submit", handleSaveExpense);
+      document.getElementById("close-form").addEventListener("submit", handleCloseCycle);
+    });
+
+    async function loadCycleDetails() {
+      try {
+        const c = await API.getCycle(currentCycleId);
+        document.getElementById("cycle-title").textContent = `${UI.translateCrop(c.crop_name)} Cycle`;
+        document.getElementById("cycle-subtitle").textContent = `Farm: ${c.farm_name || 'My Farm'} (Cycle #${c.cycle_id})`;
+
+        const badge = document.getElementById("cycle-status-badge");
+        badge.textContent = UI.translateStatus(c.status);
+        if (c.status === "Growing") badge.className = "badge badge-growing";
+        else if (c.status === "Planned") badge.className = "badge badge-planned";
+        else if (c.status === "Harvested") badge.className = "badge badge-harvested";
+        else badge.className = "badge badge-failed";
+
+        document.getElementById("kpi-sown").textContent = UI.formatDate(c.sowing_date);
+        document.getElementById("kpi-expected").textContent = UI.formatDate(c.expected_harvest);
+
+        if (c.yield_kg !== null && c.yield_kg !== undefined) {
+          document.getElementById("kpi-yield").textContent = `${c.yield_kg} kg`;
+        } else {
+          document.getElementById("kpi-yield").textContent = "—";
+        }
+
+        // Show/hide close button if active
+        const closeBtn = document.getElementById("open-close-modal-btn");
+        if (c.status === "Growing" || c.status === "Planned") {
+          closeBtn.style.display = "inline-flex";
+        } else {
+          closeBtn.style.display = "none";
+        }
+      } catch (err) {
+        UI.showAlert("alert-container", "Error loading cycle details: " + err.message);
+      }
+    }
+
+    async function loadExpenses() {
+      try {
+        const expenses = await API.getExpenses(currentCycleId);
+        renderExpensesTable(expenses);
+
+        const total = expenses.reduce((acc, e) => acc + (e.amount || 0), 0);
+        document.getElementById("kpi-expenses").textContent = UI.formatCurrency(total);
+
+        await loadExpenseSummaryChart();
+      } catch (err) {
+        UI.showAlert("alert-container", "Error loading expenses: " + err.message);
+      }
+    }
+
+    async function loadExpenseSummaryChart() {
+      if (typeof Chart === "undefined") return;
+      const canvas = document.getElementById("cycleExpenseDonutChart");
+      if (!canvas) return;
+
+      try {
+        const summaryData = await API.getCycleExpenseSummary(currentCycleId);
+        const validItems = (summaryData || []).filter(item => (item.total_amount || 0) > 0);
+
+        const categoryColors = {
+          "Seeds": "#10b981",
+          "Fertilizer": "#3b82f6",
+          "Pesticide": "#f59e0b",
+          "Labour": "#8b5cf6",
+          "Irrigation": "#06b6d4",
+          "Machinery": "#ec4899",
+          "Other": "#94a3b8"
+        };
+
+        if (cycleExpenseChartInstance) cycleExpenseChartInstance.destroy();
+
+        const emptyContainer = document.getElementById("cycle-expense-empty-chart");
+        if (validItems.length === 0) {
+          if (emptyContainer) emptyContainer.style.display = "flex";
+          canvas.style.display = "none";
+          return;
+        } else {
+          if (emptyContainer) emptyContainer.style.display = "none";
+          canvas.style.display = "block";
+        }
+
+        const totalSum = validItems.reduce((acc, it) => acc + (parseFloat(it.total_amount) || 0), 0);
+        const labels = validItems.map(it => UI.translateCategory(it.category));
+        const dataValues = validItems.map(it => parseFloat(it.total_amount));
+        const bgColors = validItems.map(it => categoryColors[it.category] || "#64748b");
+
+        cycleExpenseChartInstance = new Chart(canvas, {
+          type: "doughnut",
+          data: {
+            labels: labels,
+            datasets: [{
+              data: dataValues,
+              backgroundColor: bgColors,
+              borderColor: "#ffffff",
+              borderWidth: 2,
+              hoverOffset: 4,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "65%",
+            plugins: {
+              legend: {
+                position: "right",
+                labels: {
+                  boxWidth: 12,
+                  font: { size: 11 },
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((lbl, idx) => {
+                      const val = data.datasets[0].data[idx];
+                      const pct = totalSum > 0 ? ((val / totalSum) * 100).toFixed(1) : 0;
+                      return {
+                        text: `${lbl} (${pct}%)`,
+                        fillStyle: data.datasets[0].backgroundColor[idx],
+                        hidden: false,
+                        index: idx
+                      };
+                    });
+                  }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => {
+                    const val = ctx.raw || 0;
+                    const pct = totalSum > 0 ? ((val / totalSum) * 100).toFixed(1) : 0;
+                    return ` ${ctx.label}: ₹${val.toLocaleString()} (${pct}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.warn("Could not load cycle expense summary", err);
+      }
+    }
+
+    function renderExpensesTable(expenses) {
+      const tbody = document.getElementById("expenses-tbody");
+      if (!expenses || expenses.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+              No expenses recorded yet. Click "+ Record Expense" to add input costs.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = expenses.map((e) => `
+        <tr>
+          <td>${UI.formatDate(e.expense_date)}</td>
+          <td><strong>${UI.translateCategory(e.category)}</strong></td>
+          <td style="color:var(--accent); font-weight:700;">${UI.formatCurrency(e.amount)}</td>
+          <td>${e.notes || '—'}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" style="color:var(--danger); font-size:0.75rem; padding:0.2rem 0.5rem;" onclick="handleDeleteExpense(${e.expense_id})">
+              Delete
+            </button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    async function loadAuditLog() {
+      try {
+        const logs = await API.getCycleLog(currentCycleId);
+        const tbody = document.getElementById("log-tbody");
+
+        if (!logs || logs.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="4" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
+                No audit log entries recorded.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = logs.map((l) => `
+          <tr>
+            <td>#${l.log_id}</td>
+            <td>${l.old_status ? `<span class="badge">${l.old_status}</span>` : '<span style="color:var(--text-muted);">None (Created)</span>'}</td>
+            <td><span class="badge badge-growing">${l.new_status}</span></td>
+            <td>${new Date(l.changed_at).toLocaleString()}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        console.warn("Could not load audit log", err);
+      }
+    }
+
+    async function loadCalendar() {
+      const container = document.getElementById("calendar-timeline-container");
+      try {
+        const stages = await API.getCycleCalendar(currentCycleId);
+        if (!stages || stages.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <p>No growth stages configured for this crop.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="timeline">
+            ${stages.map((s) => {
+              const statusClass = (s.stage_status || "upcoming").toLowerCase();
+              let badgeHtml = "";
+              if (s.stage_status === "Done") {
+                badgeHtml = `<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700;">✓ Done</span>`;
+              } else if (s.stage_status === "Current") {
+                badgeHtml = `<span class="badge badge-growing" style="font-weight:700;">📍 Current Stage</span>`;
+              } else {
+                badgeHtml = `<span class="badge" style="background:#f1f5f9; color:#64748b; font-weight:600;">⏳ Upcoming</span>`;
+              }
+
+              return `
+                <div class="timeline-item ${statusClass}">
+                  <div class="timeline-content">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.4rem;">
+                      <div style="font-weight:700; font-size:1.05rem; color:#0f172a;">
+                        ${s.stage_name}
+                        <span style="font-size:0.8rem; font-weight:500; color:var(--text-muted); margin-left:0.35rem;">
+                          (Day ${s.start_day} &ndash; ${s.end_day})
+                        </span>
+                      </div>
+                      <div>${badgeHtml}</div>
+                    </div>
+
+                    <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.5rem;">
+                      📅 Window: <strong>${UI.formatDate(s.start_date)}</strong> &ndash; <strong>${UI.formatDate(s.end_date)}</strong>
+                    </div>
+
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-sm); padding:0.6rem 0.85rem; font-size:0.86rem; color:#1e293b;">
+                      📋 <strong>Agronomic Task:</strong> ${s.task || 'Monitor field conditions and crop vigor.'}
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `;
+      } catch (err) {
+        container.innerHTML = `
+          <div class="empty-state" style="color:var(--danger);">
+            <p>Could not load growth stages: ${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    function openExpenseModal() {
+      document.getElementById("expense-amt").value = "";
+      document.getElementById("expense-notes").value = "";
+      UI.clearAlert("expense-modal-alert");
+      UI.openModal("expense-modal");
+    }
+
+    async function handleSaveExpense(e) {
+      e.preventDefault();
+      UI.clearAlert("expense-modal-alert");
+
+      const payload = {
+        category: document.getElementById("expense-cat").value,
+        amount: parseFloat(document.getElementById("expense-amt").value),
+        expense_date: document.getElementById("expense-date").value,
+        notes: document.getElementById("expense-notes").value.trim() || null,
+      };
+
+      try {
+        await API.addExpense(currentCycleId, payload);
+        UI.closeModal("expense-modal");
+        UI.showAlert("alert-container", "Expense recorded successfully!", "success");
+        await loadExpenses();
+      } catch (err) {
+        UI.showAlert("expense-modal-alert", err.message || "Failed to record expense.");
+      }
+    }
+
+    async function handleDeleteExpense(expenseId) {
+      if (!confirm("Are you sure you want to delete this expense record?")) return;
+      try {
+        await API.deleteExpense(expenseId);
+        UI.showAlert("alert-container", "Expense deleted successfully.", "success");
+        await loadExpenses();
+      } catch (err) {
+        UI.showAlert("alert-container", "Could not delete expense: " + err.message, "danger");
+      }
+    }
+
+    function openCloseModal() {
+      document.getElementById("yield-kg").value = "";
+      document.getElementById("price-qtl").value = "";
+      UI.clearAlert("close-modal-alert");
+      UI.openModal("close-modal");
+    }
+
+    function toggleCloseInputs() {
+      const outcome = document.querySelector('input[name="close-outcome"]:checked').value;
+      const harvestedFields = document.getElementById("harvested-fields");
+      if (outcome === "Harvested") {
+        harvestedFields.style.display = "block";
+      } else {
+        harvestedFields.style.display = "none";
+      }
+    }
+
+    async function handleCloseCycle(e) {
+      e.preventDefault();
+      UI.clearAlert("close-modal-alert");
+
+      const outcome = document.querySelector('input[name="close-outcome"]:checked').value;
+      const yieldKgVal = document.getElementById("yield-kg").value;
+      const priceQtlVal = document.getElementById("price-qtl").value;
+
+      const payload = {
+        status: outcome,
+        yield_kg: outcome === "Harvested" && yieldKgVal ? parseFloat(yieldKgVal) : null,
+        price_per_quintal: outcome === "Harvested" && priceQtlVal ? parseFloat(priceQtlVal) : null,
+      };
+
+      if (outcome === "Harvested" && (payload.yield_kg === null || payload.yield_kg < 0)) {
+        UI.showAlert("close-modal-alert", "A valid yield (kg) is required for a harvested cycle.");
+        return;
+      }
+
+      const confirmBtn = document.getElementById("confirm-close-btn");
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Closing cycle...";
+
+      try {
+        await API.closeCycle(currentCycleId, payload);
+        UI.closeModal("close-modal");
+        UI.showAlert("alert-container", `Crop cycle marked as ${outcome}!`, "success");
+        await loadCycleDetails();
+        await loadAuditLog();
+      } catch (err) {
+        UI.showAlert("close-modal-alert", err.message || "Could not close crop cycle.");
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Confirm Close Cycle";
+      }
+    }
+  </script>
+</body>
+</html>

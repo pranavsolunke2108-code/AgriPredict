@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - AgriPredict</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+
+  <div class="container">
+    <div id="alert-container"></div>
+
+    <!-- Summary KPI Cards -->
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">📊 Farming Overview</h2>
+        <p class="section-subtitle">Real-time aggregate analytics from your farm records</p>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">Total Farms</span>
+        <span class="kpi-value" id="kpi-farms">0</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Active Cycles</span>
+        <span class="kpi-value" id="kpi-active">0</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Completed Cycles</span>
+        <span class="kpi-value" id="kpi-completed">0</span>
+      </div>
+      <div class="kpi-card kpi-revenue">
+        <span class="kpi-label">Total Revenue</span>
+        <span class="kpi-value" id="kpi-revenue">₹0.00</span>
+      </div>
+      <div class="kpi-card kpi-expense">
+        <span class="kpi-label">Total Expenses</span>
+        <span class="kpi-value" id="kpi-expenses">₹0.00</span>
+      </div>
+      <div class="kpi-card kpi-profit">
+        <span class="kpi-label">Net Profit</span>
+        <span class="kpi-value" id="kpi-profit">₹0.00</span>
+      </div>
+    </div>
+
+    <!-- Analytics Charts -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">
+          <span>📈 Profit per Completed Cycle (₹)</span>
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">Harvested/Failed crops</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="profitBarChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">
+          <span>🥧 Expenses by Category</span>
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">Cycle expenditures</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="expensesPieChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Current Status Section -->
+    <div class="section-header" style="margin-top: 1rem;">
+      <div>
+        <h2 class="section-title">
+          <span>🌱</span> <span data-i18n="current_status">Current Status</span>
+        </h2>
+        <p class="section-subtitle">Real-time stage tracking and progress of your active crop cycles</p>
+      </div>
+      <a href="/ui/farms" class="btn btn-primary btn-sm">
+        <span>+ Start New Cycle</span>
+      </a>
+    </div>
+
+    <div id="current-cycles-container" class="cycles-grid">
+      <!-- Active cycle cards will be dynamically injected here -->
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="empty-state-icon">⏳</div>
+        <p>Loading active crop cycles...</p>
+      </div>
+    </div>
+
+    <!-- Harvest History Section -->
+    <div class="section-header" style="margin-top: 1.5rem;">
+      <div>
+        <h2 class="section-title">
+          <span>📜</span> <span data-i18n="history">Harvest History</span>
+        </h2>
+        <p class="section-subtitle">Financial performance and harvest records of past completed crops</p>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-toolbar">
+        <select id="filter-farm" class="form-control" style="max-width: 220px;">
+          <option value="">All Farms</option>
+        </select>
+        <input
+          type="text"
+          id="filter-crop"
+          class="form-control"
+          placeholder="Search crop name..."
+          style="max-width: 220px;"
+        >
+        <button type="button" id="filter-btn" class="btn btn-secondary btn-sm">Filter</button>
+        <button type="button" id="reset-filter-btn" class="btn btn-secondary btn-sm">Reset</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Farm</th>
+              <th>Crop</th>
+              <th>Status</th>
+              <th>Sowing Date</th>
+              <th>Harvest Date</th>
+              <th>Yield (kg)</th>
+              <th>Price/Qtl</th>
+              <th>Revenue</th>
+              <th>Expenses</th>
+              <th>Profit</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <tr>
+              <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                Loading history records...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border);">
+        <span id="history-pagination-info" style="font-size: 0.85rem; color: var(--text-muted);">Showing records</span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" id="prev-page-btn" class="btn btn-secondary btn-sm" disabled>Previous</button>
+          <button type="button" id="next-page-btn" class="btn btn-secondary btn-sm">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script>
+    let profitChartInstance = null;
+    let expensesChartInstance = null;
+    let currentOffset = 0;
+    const PAGE_LIMIT = 10;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (!UI.requireAuth()) return;
+      UI.renderNavbar("dashboard");
+
+      await loadDashboardData();
+      await loadExpenseCategoryChart();
+      await populateFarmFilter();
+      await loadHistory();
+
+      // Bind filter buttons
+      document.getElementById("filter-btn").addEventListener("click", () => {
+        currentOffset = 0;
+        loadHistory();
+      });
+
+      document.getElementById("reset-filter-btn").addEventListener("click", () => {
+        document.getElementById("filter-farm").value = "";
+        document.getElementById("filter-crop").value = "";
+        currentOffset = 0;
+        loadHistory();
+      });
+
+      document.getElementById("prev-page-btn").addEventListener("click", () => {
+        if (currentOffset >= PAGE_LIMIT) {
+          currentOffset -= PAGE_LIMIT;
+          loadHistory();
+        }
+      });
+
+      document.getElementById("next-page-btn").addEventListener("click", () => {
+        currentOffset += PAGE_LIMIT;
+        loadHistory();
+      });
+
+      window.addEventListener("agri_lang_changed", async () => {
+        await loadDashboardData();
+        await loadExpenseCategoryChart();
+        await loadHistory();
+      });
+    });
+
+    async function loadDashboardData() {
+      try {
+        // 1. Load Summary
+        const summary = await API.getDashboardSummary();
+        document.getElementById("kpi-farms").textContent = summary.total_farms;
+        document.getElementById("kpi-active").textContent = summary.active_cycles;
+        document.getElementById("kpi-completed").textContent = summary.completed_cycles;
+        document.getElementById("kpi-revenue").textContent = UI.formatCurrency(summary.total_revenue);
+        document.getElementById("kpi-expenses").textContent = UI.formatCurrency(summary.total_expenses);
+
+        const profitEl = document.getElementById("kpi-profit");
+        profitEl.textContent = UI.formatCurrency(summary.net_profit);
+        if (summary.net_profit >= 0) {
+          profitEl.className = "kpi-value positive";
+        } else {
+          profitEl.className = "kpi-value negative";
+        }
+
+        // 2. Load Current Status Active Cycles
+        const activeCycles = await API.getCurrentStatus();
+        renderCurrentCycles(activeCycles);
+
+      } catch (err) {
+        UI.showAlert("alert-container", "Error loading dashboard metrics: " + err.message);
+      }
+    }
+
+    function renderCurrentCycles(cycles) {
+      const container = document.getElementById("current-cycles-container");
+      if (!cycles || cycles.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="grid-column: 1 / -1; background:#ffffff; border:1px dashed var(--border); border-radius:var(--radius-lg);">
+            <div class="empty-state-icon">🌾</div>
+            <h3 style="font-weight:700; color:#334155; margin-bottom:0.4rem;">No Active Crop Cycles</h3>
+            <p style="font-size:0.9rem; margin-bottom:1.25rem;">You don't have any ongoing crop cycles. Get recommendations and plant a crop on your farm.</p>
+            <a href="/ui/farms" class="btn btn-primary btn-sm">Go to My Farms & Plant Crop</a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = cycles.map((c) => {
+        const badgeClass = c.status === "Growing" ? "badge-growing" : "badge-planned";
+        const progress = Math.min(100, Math.max(0, c.progress_pct || 0));
+
+        let daysText = "";
+        if (c.days_to_harvest !== null && c.days_to_harvest !== undefined) {
+          daysText = c.days_to_harvest >= 0
+            ? `${c.days_to_harvest} days remaining`
+            : `${Math.abs(c.days_to_harvest)} days overdue`;
+        } else {
+          daysText = "Harvest date pending";
+        }
+
+        return `
+          <div class="cycle-card">
+            <div>
+              <div class="cycle-card-top">
+                <div>
+                  <h3 class="cycle-crop-name">${UI.translateCrop(c.crop_name)}</h3>
+                  <div class="cycle-farm-name">📍 ${c.farm_name}</div>
+                </div>
+                <span class="badge ${badgeClass}">${UI.translateStatus(c.status)}</span>
+              </div>
+
+              <div class="progress-container">
+                <div class="progress-header">
+                  <span>Cycle Progress</span>
+                  <span>${progress.toFixed(1)}%</span>
+                </div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" style="width: ${progress}%;"></div>
+                </div>
+              </div>
+
+              <div class="cycle-stage-box">
+                <div class="stage-title">Stage: ${c.current_stage || 'Active'}</div>
+                <div class="stage-task">Task: ${c.current_task || 'Monitor crop health and moisture.'}</div>
+              </div>
+
+              <div class="cycle-metrics">
+                <div class="cycle-metric-item">
+                  <span class="label">Sown:</span>
+                  <span class="val">${UI.formatDate(c.sowing_date)}</span>
+                </div>
+                <div class="cycle-metric-item">
+                  <span class="label">Harvest:</span>
+                  <span class="val">${daysText}</span>
+                </div>
+                <div class="cycle-metric-item">
+                  <span class="label">Days Active:</span>
+                  <span class="val">${c.days_since_sowing !== null ? c.days_since_sowing + ' days' : 'Not sown'}</span>
+                </div>
+                <div class="cycle-metric-item">
+                  <span class="label">Expenses:</span>
+                  <span class="val" style="color:var(--accent); font-weight:700;">${UI.formatCurrency(c.expenses_so_far)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:0.75rem;">
+              <a href="/ui/cycle-detail?id=${c.cycle_id}" class="btn btn-secondary btn-sm btn-block">
+                ⚙️ Manage Cycle & Expenses
+              </a>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function populateFarmFilter() {
+      try {
+        const farms = await API.getFarms();
+        const select = document.getElementById("filter-farm");
+        farms.forEach((f) => {
+          const opt = document.createElement("option");
+          opt.value = f.farm_id;
+          opt.textContent = `${f.farm_name} (${f.area_acres} acres)`;
+          select.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn("Could not load farm filter options", e);
+      }
+    }
+
+    async function loadHistory() {
+      const farmId = document.getElementById("filter-farm").value || undefined;
+      const crop = document.getElementById("filter-crop").value.trim() || undefined;
+
+      try {
+        const history = await API.getHistory({
+          farm_id: farmId,
+          crop: crop,
+          limit: PAGE_LIMIT,
+          offset: currentOffset,
+        });
+
+        renderHistoryTable(history);
+        renderChartsFromHistory(history);
+
+        // Pagination controls
+        document.getElementById("prev-page-btn").disabled = currentOffset <= 0;
+        document.getElementById("next-page-btn").disabled = history.length < PAGE_LIMIT;
+        document.getElementById("history-pagination-info").textContent =
+          `Showing ${history.length} records (offset: ${currentOffset})`;
+      } catch (err) {
+        UI.showAlert("alert-container", "Error loading history: " + err.message);
+      }
+    }
+
+    function renderHistoryTable(items) {
+      const tbody = document.getElementById("history-tbody");
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+              No completed cycles found.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = items.map((item) => {
+        const isHarvested = item.status === "Harvested";
+        const badgeClass = isHarvested ? "badge-harvested" : "badge-failed";
+        const profitClass = item.profit >= 0 ? "positive" : "negative";
+
+        return `
+          <tr>
+            <td><strong>${item.farm_name}</strong></td>
+            <td>${UI.translateCrop(item.crop_name)}</td>
+            <td><span class="badge ${badgeClass}">${UI.translateStatus(item.status)}</span></td>
+            <td>${UI.formatDate(item.sowing_date)}</td>
+            <td>${UI.formatDate(item.actual_harvest)}</td>
+            <td>${item.yield_kg !== null ? item.yield_kg.toLocaleString() + ' kg' : '—'}</td>
+            <td>${item.selling_price_per_quintal !== null ? UI.formatCurrency(item.selling_price_per_quintal) : '—'}</td>
+            <td style="font-weight:600; color:var(--info);">${UI.formatCurrency(item.revenue)}</td>
+            <td style="color:var(--accent); font-weight:600;">${UI.formatCurrency(item.total_expenses)}</td>
+            <td style="font-weight:700;" class="${profitClass}">${UI.formatCurrency(item.profit)}</td>
+            <td>
+              <a href="/ui/cycle-detail?id=${item.cycle_id}" class="btn btn-secondary btn-sm" style="padding:0.25rem 0.5rem; font-size:0.75rem;">
+                View
+              </a>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderChartsFromHistory(historyItems) {
+      if (typeof Chart === "undefined") return;
+
+      // 1. Profit per Cycle Bar Chart
+      const profitCanvas = document.getElementById("profitBarChart");
+      if (profitCanvas) {
+        const labels = historyItems.slice(0, 8).map(h => `${UI.translateCrop(h.crop_name)} (${h.farm_name})`);
+        const profits = historyItems.slice(0, 8).map(h => h.profit);
+        const bgColors = profits.map(p => p >= 0 ? "rgba(16, 185, 129, 0.7)" : "rgba(239, 68, 68, 0.7)");
+        const borderColors = profits.map(p => p >= 0 ? "#059669" : "#dc2626");
+
+        if (profitChartInstance) profitChartInstance.destroy();
+
+        profitChartInstance = new Chart(profitCanvas, {
+          type: "bar",
+          data: {
+            labels: labels.length ? labels : ["No data"],
+            datasets: [{
+              label: "Net Profit (₹)",
+              data: profits.length ? profits : [0],
+              backgroundColor: bgColors.length ? bgColors : ["#cbd5e1"],
+              borderColor: borderColors.length ? borderColors : ["#94a3b8"],
+              borderWidth: 1,
+              borderRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: (value) => "₹" + value.toLocaleString()
+                }
+              }
+            }
+          }
+        });
+      }
+
+        });
+      }
+    }
+
+    async function loadExpenseCategoryChart() {
+      if (typeof Chart === "undefined") return;
+      const pieCanvas = document.getElementById("expensesPieChart");
+      if (!pieCanvas) return;
+
+      try {
+        const catData = await API.getFarmerExpensesByCategory();
+        const validItems = (catData || []).filter(item => (item.total_amount || 0) > 0);
+
+        const categoryColors = {
+          "Seeds": "#10b981",
+          "Fertilizer": "#3b82f6",
+          "Pesticide": "#f59e0b",
+          "Labour": "#8b5cf6",
+          "Irrigation": "#06b6d4",
+          "Machinery": "#ec4899",
+          "Other": "#94a3b8"
+        };
+
+        if (expensesChartInstance) expensesChartInstance.destroy();
+
+        if (validItems.length === 0) {
+          // Render an empty ring
+          expensesChartInstance = new Chart(pieCanvas, {
+            type: "doughnut",
+            data: {
+              labels: ["No Expenses Yet"],
+              datasets: [{
+                data: [1],
+                backgroundColor: ["#e2e8f0"],
+                borderWidth: 0,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: "70%",
+              plugins: {
+                legend: {
+                  position: "bottom",
+                  labels: { boxWidth: 12, font: { size: 11 } }
+                },
+                tooltip: {
+                  callbacks: {
+                    label: () => " No expenses recorded across cycles"
+                  }
+                }
+              }
+            }
+          });
+          return;
+        }
+
+        const totalSum = validItems.reduce((acc, it) => acc + (parseFloat(it.total_amount) || 0), 0);
+        const labels = validItems.map(it => UI.translateCategory(it.category));
+        const dataValues = validItems.map(it => parseFloat(it.total_amount));
+        const bgColors = validItems.map(it => categoryColors[it.category] || "#64748b");
+
+        expensesChartInstance = new Chart(pieCanvas, {
+          type: "doughnut",
+          data: {
+            labels: labels,
+            datasets: [{
+              data: dataValues,
+              backgroundColor: bgColors,
+              borderColor: "#ffffff",
+              borderWidth: 2,
+              hoverOffset: 4,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "65%",
+            plugins: {
+              legend: {
+                position: "right",
+                labels: {
+                  boxWidth: 12,
+                  font: { size: 11 },
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((lbl, idx) => {
+                      const val = data.datasets[0].data[idx];
+                      const pct = totalSum > 0 ? ((val / totalSum) * 100).toFixed(1) : 0;
+                      return {
+                        text: `${lbl} (${pct}%)`,
+                        fillStyle: data.datasets[0].backgroundColor[idx],
+                        hidden: false,
+                        index: idx
+                      };
+                    });
+                  }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => {
+                    const val = ctx.raw || 0;
+                    const pct = totalSum > 0 ? ((val / totalSum) * 100).toFixed(1) : 0;
+                    return ` ${ctx.label}: ₹${val.toLocaleString()} (${pct}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.warn("Could not load expenses by category", err);
+      }
+    }
+  </script>
+</body>
+</html>

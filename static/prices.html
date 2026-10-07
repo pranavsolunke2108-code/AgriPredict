@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mandi Market Prices & Price Trends - AgriPredict</title>
+  <link rel="stylesheet" href="/static/css/index.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .trend-header-card {
+      background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%);
+      color: white;
+      border-radius: var(--radius-lg);
+      padding: 1.75rem 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+    }
+    .trend-header-card::after {
+      content: "📈";
+      position: absolute;
+      right: 1.5rem;
+      bottom: -0.5rem;
+      font-size: 6rem;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    .filter-panel {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      align-items: flex-end;
+    }
+    .filter-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      min-width: 180px;
+      flex: 1;
+    }
+    .filter-item label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .chart-container-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .chart-btn-group {
+      display: flex;
+      gap: 0.35rem;
+      background: #f1f5f9;
+      padding: 0.25rem;
+      border-radius: var(--radius-sm);
+    }
+    .chart-btn {
+      border: none;
+      background: transparent;
+      padding: 0.3rem 0.75rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #64748b;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .chart-btn.active {
+      background: white;
+      color: var(--primary-dark);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .price-badge-up {
+      background: #dcfce7;
+      color: #15803d;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+
+  <div class="container" style="padding-top: 1.5rem; padding-bottom: 3rem;">
+    <!-- Hero Banner -->
+    <div class="trend-header-card">
+      <div style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #a7f3d0; margin-bottom: 0.35rem;">
+        APMC Mandi Intelligence & Agronomic Pricing
+      </div>
+      <h2 style="font-size: 1.85rem; font-weight: 800; margin: 0 0 0.5rem 0;">Mandi Market Prices & Price Trends</h2>
+      <p style="margin: 0; font-size: 0.95rem; opacity: 0.9; max-width: 650px;">
+        Track real-time agricultural commodity prices, analyze 90-day price trends across districts, and evaluate expected crop profitability before sowing.
+      </p>
+    </div>
+
+    <!-- Filters & Selectors -->
+    <div class="filter-panel">
+      <div class="filter-item">
+        <label for="district-select">District (Mandi Location)</label>
+        <select id="district-select" class="form-control" onchange="onFilterChange()">
+          <option value="">Loading districts...</option>
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label for="crop-select">Filter by Crop</label>
+        <select id="crop-select" class="form-control" onchange="onFilterChange()">
+          <option value="">All Crops</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+        <button type="button" class="btn btn-primary" onclick="loadAllPriceData()">Refresh Rates</button>
+      </div>
+    </div>
+
+    <!-- Chart: Historical Price Trends -->
+    <div class="chart-container-card">
+      <div class="chart-header">
+        <div>
+          <h3 id="chart-title" style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">
+            Commodity Price History
+          </h3>
+          <p id="chart-subtitle" style="font-size: 0.8rem; color: #64748b; margin: 0.15rem 0 0 0;">
+            Daily mandi rates (₹ per quintal)
+          </p>
+        </div>
+        <div class="chart-btn-group">
+          <button type="button" class="chart-btn" data-days="30" onclick="setTimeframe(30)">30 Days</button>
+          <button type="button" class="chart-btn active" data-days="90" onclick="setTimeframe(90)">90 Days</button>
+          <button type="button" class="chart-btn" data-days="180" onclick="setTimeframe(180)">180 Days</button>
+          <button type="button" class="chart-btn" data-days="365" onclick="setTimeframe(365)">1 Year</button>
+        </div>
+      </div>
+
+      <div style="position: relative; height: 320px; width: 100%;">
+        <canvas id="priceHistoryChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Table: Latest Prices -->
+    <div class="card">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">
+            Latest Mandi Rates
+          </h3>
+          <p style="font-size: 0.8rem; color: #64748b; margin: 0.2rem 0 0 0;">
+            Current rates from <code>latest_prices_view</code>
+          </p>
+        </div>
+        <span id="price-count-badge" class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;">0 Crops</span>
+      </div>
+
+      <div id="prices-alert"></div>
+
+      <div class="table-container">
+        <table class="data-table" id="latest-prices-table">
+          <thead>
+            <tr>
+              <th>Crop Name</th>
+              <th>District / Mandi</th>
+              <th style="text-align: right;">Rate (₹ / Quintal)</th>
+              <th style="text-align: right;">Effective Date</th>
+              <th style="text-align: center;">Trend Status</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="prices-tbody">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                Fetching latest mandi prices...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script>
+    let currentDays = 90;
+    let priceChart = null;
+    let allCrops = [];
+    const MAHARASHTRA_DISTRICTS = [
+      "Pune", "Nashik", "Nagpur", "Aurangabad", "Kolhapur", "Solapur",
+      "Amravati", "Nanded", "Jalgaon", "Ahmednagar", "Satara", "Sangli"
+    ];
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (!UI.requireAuth()) return;
+      UI.renderNavbar("prices");
+
+      populateDistricts();
+      await populateCrops();
+      await loadAllPriceData();
+    });
+
+    function populateDistricts() {
+      const select = document.getElementById("district-select");
+      const farmer = API.getFarmer();
+      const farmerDistrict = (farmer && farmer.district) ? farmer.district : "Pune";
+
+      let options = `<option value="all">All Districts</option>`;
+      MAHARASHTRA_DISTRICTS.forEach((d) => {
+        const isSelected = d.toLowerCase() === farmerDistrict.toLowerCase() ? "selected" : "";
+        options += `<option value="${d}" ${isSelected}>${d}</option>`;
+      });
+      select.innerHTML = options;
+    }
+
+    async function populateCrops() {
+      const select = document.getElementById("crop-select");
+      try {
+        const res = await API.request("/prices?district=all");
+        const uniqueCrops = new Map();
+        res.forEach(item => {
+          if (!uniqueCrops.has(item.crop_id)) {
+            uniqueCrops.set(item.crop_id, item.crop_name || `Crop #${item.crop_id}`);
+          }
+        });
+        allCrops = Array.from(uniqueCrops.entries());
+
+        let options = `<option value="">All Crops</option>`;
+        allCrops.forEach(([id, name]) => {
+          options += `<option value="${id}">${UI.translateCrop(name)}</option>`;
+        });
+        select.innerHTML = options;
+      } catch (err) {
+        console.warn("Could not load crop filters:", err);
+      }
+    }
+
+    function onFilterChange() {
+      loadAllPriceData();
+    }
+
+    function resetFilters() {
+      const farmer = API.getFarmer();
+      const farmerDistrict = (farmer && farmer.district) ? farmer.district : "Pune";
+      document.getElementById("district-select").value = farmerDistrict;
+      document.getElementById("crop-select").value = "";
+      loadAllPriceData();
+    }
+
+    function setTimeframe(days) {
+      currentDays = days;
+      document.querySelectorAll(".chart-btn").forEach((btn) => {
+        if (parseInt(btn.dataset.days) === days) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+      loadPriceHistory();
+    }
+
+    async function loadAllPriceData() {
+      await Promise.all([loadLatestPrices(), loadPriceHistory()]);
+    }
+
+    async function loadLatestPrices() {
+      const tbody = document.getElementById("prices-tbody");
+      const badge = document.getElementById("price-count-badge");
+      const districtVal = document.getElementById("district-select").value;
+      const cropVal = document.getElementById("crop-select").value;
+
+      try {
+        const params = {};
+        if (districtVal && districtVal !== "all") params.district = districtVal;
+        if (cropVal) params.crop_id = cropVal;
+
+        const data = await API.getLatestPrices(params);
+        badge.textContent = `${data.length} Rate${data.length === 1 ? '' : 's'}`;
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                No mandi prices found for the selected criteria.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = data.map((item) => {
+          return `
+            <tr>
+              <td>
+                <div style="font-weight: 800; color: #0f172a;">${UI.translateCrop(item.crop_name) || 'Crop #' + item.crop_id}</div>
+              </td>
+              <td>
+                <span class="badge" style="background:#f1f5f9; color:#475569; font-weight:600;">
+                  📍 ${item.district}
+                </span>
+              </td>
+              <td style="text-align: right; font-weight: 800; color: #047857; font-size: 1.05rem;">
+                ${UI.formatCurrency(item.price_per_quintal)}
+              </td>
+              <td style="text-align: right; color: #64748b; font-size: 0.88rem;">
+                ${UI.formatDate(item.price_date)}
+              </td>
+              <td style="text-align: center;">
+                <span class="price-badge-up">● Active Mandi Rate</span>
+              </td>
+              <td style="text-align: right;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="focusCropTrend(${item.crop_id}, '${item.crop_name}', '${item.district}')">
+                  📈 View Trend
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+      } catch (err) {
+        UI.showAlert("prices-alert", err.message || "Failed to load latest prices.");
+      }
+    }
+
+    function focusCropTrend(cropId, cropName, district) {
+      document.getElementById("crop-select").value = cropId;
+      document.getElementById("district-select").value = district;
+      loadPriceHistory();
+      document.getElementById("chart-title").scrollIntoView({ behavior: "smooth" });
+    }
+
+    async function loadPriceHistory() {
+      const districtVal = document.getElementById("district-select").value;
+      const cropVal = document.getElementById("crop-select").value;
+
+      const params = { days: currentDays };
+      if (districtVal && districtVal !== "all") params.district = districtVal;
+      if (cropVal) params.crop_id = cropVal;
+
+      try {
+        const historyData = await API.getPriceHistory(params);
+        renderHistoryChart(historyData);
+      } catch (err) {
+        console.warn("Could not load price history:", err);
+      }
+    }
+
+    function renderHistoryChart(historyData) {
+      const ctx = document.getElementById("priceHistoryChart").getContext("2d");
+      const titleEl = document.getElementById("chart-title");
+      const subtitleEl = document.getElementById("chart-subtitle");
+
+      if (priceChart) {
+        priceChart.destroy();
+      }
+
+      if (!historyData || historyData.length === 0) {
+        titleEl.textContent = "Price History Trend";
+        subtitleEl.textContent = "No historical transactions recorded within this timeframe";
+        priceChart = new Chart(ctx, {
+          type: "line",
+          data: { labels: [], datasets: [] },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+        return;
+      }
+
+      // Group by crop_name
+      const cropsGroup = {};
+      const datesSet = new Set();
+
+      historyData.forEach((item) => {
+        const cname = item.crop_name || `Crop #${item.crop_id}`;
+        datesSet.add(item.price_date);
+        if (!cropsGroup[cname]) {
+          cropsGroup[cname] = {};
+        }
+        cropsGroup[cname][item.price_date] = item.price_per_quintal;
+      });
+
+      const sortedDates = Array.from(datesSet).sort();
+      const colorPalette = [
+        { border: "#059669", bg: "rgba(5, 150, 105, 0.15)" },
+        { border: "#2563eb", bg: "rgba(37, 99, 235, 0.15)" },
+        { border: "#d97706", bg: "rgba(217, 119, 6, 0.15)" },
+        { border: "#7c3aed", bg: "rgba(124, 58, 237, 0.15)" },
+        { border: "#e11d48", bg: "rgba(225, 29, 72, 0.15)" },
+      ];
+
+      let colorIdx = 0;
+      const datasets = Object.keys(cropsGroup).map((cname) => {
+        const color = colorPalette[colorIdx % colorPalette.length];
+        colorIdx++;
+        const dataPoints = sortedDates.map(d => cropsGroup[cname][d] !== undefined ? cropsGroup[cname][d] : null);
+
+        return {
+          label: cname,
+          data: dataPoints,
+          borderColor: color.border,
+          backgroundColor: color.bg,
+          borderWidth: 2.5,
+          tension: 0.3,
+          fill: true,
+          spanGaps: true,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        };
+      });
+
+      titleEl.textContent = `Commodity Price Trend (Past ${currentDays} Days)`;
+      subtitleEl.textContent = `Showing mandi rates for ${Object.keys(cropsGroup).join(", ")}`;
+
+      priceChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: sortedDates.map(d => UI.formatDate(d)),
+          datasets: datasets,
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: "index",
+            intersect: false,
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              ticks: {
+                callback: function(val) {
+                  return "₹" + val;
+                },
+              },
+              grid: {
+                color: "#f1f5f9",
+              },
+            },
+            x: {
+              grid: {
+                display: false,
+              },
+            },
+          },
+          plugins: {
+            legend: {
+              position: "top",
+              labels: {
+                boxWidth: 12,
+                font: { weight: "bold" },
+              },
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ₹${context.parsed.y} / quintal`;
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+  </script>
+</body>
+</html>

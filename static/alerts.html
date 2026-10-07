@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alerts & Notifications - AgriPredict</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .alerts-container {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+    .alerts-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .filter-tabs {
+      display: flex;
+      background: #f1f5f9;
+      padding: 0.25rem;
+      border-radius: var(--radius-sm);
+      gap: 0.25rem;
+    }
+    .filter-tab {
+      border: none;
+      background: transparent;
+      padding: 0.4rem 0.9rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-tab.active {
+      background: #ffffff;
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+
+  <div class="alerts-container">
+    <div id="page-alert-box"></div>
+
+    <div class="alerts-toolbar">
+      <div>
+        <h1 style="font-size: 1.6rem; font-weight: 700; color: #0f172a;">🔔 Field Alerts & Advisories</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">
+          Trigger-based weather warnings and crop stage management tasks for your registered farms.
+        </p>
+      </div>
+      <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <button class="btn btn-secondary btn-sm" onclick="loadAlerts()">🔄 Refresh</button>
+        <button class="btn btn-primary btn-sm" onclick="handleMarkAllRead()">✓ Mark All as Read</button>
+      </div>
+    </div>
+
+    <div class="alerts-toolbar" style="margin-bottom: 1rem;">
+      <div class="filter-tabs">
+        <button class="filter-tab active" id="tab-all" onclick="setFilter(false)">All Alerts</button>
+        <button class="filter-tab" id="tab-unread" onclick="setFilter(true)">Unread Only</button>
+      </div>
+      <div id="alerts-status-info" style="font-size: 0.85rem; color: var(--text-muted);"></div>
+    </div>
+
+    <div id="alerts-list">
+      <div class="card" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+        Loading alerts...
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script>
+    let filterUnreadOnly = false;
+
+    function setFilter(unread) {
+      filterUnreadOnly = unread;
+      document.getElementById("tab-all").classList.toggle("active", !unread);
+      document.getElementById("tab-unread").classList.toggle("active", unread);
+      loadAlerts();
+    }
+
+    async function loadAlerts() {
+      if (!UI.requireAuth()) return;
+      const listEl = document.getElementById("alerts-list");
+      const infoEl = document.getElementById("alerts-status-info");
+
+      try {
+        const alerts = await API.getAlerts({ unread: filterUnreadOnly, limit: 50 });
+        UI.updateAlertBadge();
+
+        if (!alerts || alerts.length === 0) {
+          infoEl.textContent = "";
+          listEl.innerHTML = `
+            <div class="empty-state card">
+              <div class="empty-state-icon">🛡️</div>
+              <h3 style="font-size: 1.15rem; color: #1e293b; margin-bottom: 0.35rem;">
+                ${filterUnreadOnly ? "No Unread Alerts" : "No Alerts Found"}
+              </h3>
+              <p style="font-size: 0.9rem; color: var(--text-muted); max-width: 420px; margin: 0 auto;">
+                ${filterUnreadOnly ? "Great job! All your field and weather notifications have been reviewed." : "Your crops and weather conditions are stable. Automated trigger alerts will appear here whenever weather risks or scheduled growth tasks occur."}
+              </p>
+            </div>
+          `;
+          return;
+        }
+
+        infoEl.textContent = `Showing ${alerts.length} alert${alerts.length === 1 ? '' : 's'}`;
+
+        listEl.innerHTML = alerts.map(a => {
+          const meta = UI.getAlertMeta(a.alert_type);
+          const timeFormatted = UI.formatDate(a.created_at);
+
+          return `
+            <div class="alert-card ${a.is_read ? 'read' : 'unread'}" id="alert-card-${a.alert_id}">
+              <div class="alert-icon-box">
+                ${meta.icon}
+              </div>
+              <div class="alert-content">
+                <div class="alert-header">
+                  <div class="alert-meta">
+                    <span class="alert-type-badge ${meta.badgeClass}">${meta.icon} ${meta.label}</span>
+                    <span>•</span>
+                    <span style="font-weight: 600; color: #334155;">📍 ${a.farm_name || `Farm #${a.farm_id}`}</span>
+                    <span>•</span>
+                    <span>${timeFormatted}</span>
+                  </div>
+                  ${!a.is_read ? `
+                    <button class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.6rem; font-size: 0.78rem;" onclick="handleMarkRead(${a.alert_id})">
+                      Mark as read
+                    </button>
+                  ` : `
+                    <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 500;">Read</span>
+                  `}
+                </div>
+                <div style="font-size: 0.92rem; color: #1e293b; margin-top: 0.35rem; line-height: 1.45;">
+                  ${a.message}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+      } catch (err) {
+        UI.showAlert("page-alert-box", err.message || "Failed to load alerts.", "danger");
+      }
+    }
+
+    async function handleMarkRead(alertId) {
+      try {
+        await API.markAlertRead(alertId);
+        loadAlerts();
+      } catch (err) {
+        UI.showAlert("page-alert-box", err.message || "Could not update alert.", "danger");
+      }
+    }
+
+    async function handleMarkAllRead() {
+      try {
+        const res = await API.markAllAlertsRead();
+        UI.showAlert("page-alert-box", res.detail || "All alerts marked as read.", "success");
+        loadAlerts();
+      } catch (err) {
+        UI.showAlert("page-alert-box", err.message || "Could not mark alerts as read.", "danger");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      UI.renderNavbar("alerts");
+      loadAlerts();
+    });
+  </script>
+</body>
+</html>

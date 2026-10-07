@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - AgriPredict</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card" style="max-width: 480px;">
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+        <div class="lang-switch">
+          <button type="button" class="lang-btn active" data-lang="en" onclick="UI.switchLanguage('en')">EN</button>
+          <button type="button" class="lang-btn" data-lang="mr" onclick="UI.switchLanguage('mr')">MR</button>
+          <button type="button" class="lang-btn" data-lang="hi" onclick="UI.switchLanguage('hi')">HI</button>
+        </div>
+      </div>
+
+      <div class="auth-header">
+        <div style="font-size: 2.4rem; margin-bottom: 0.25rem;">🌾</div>
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-subtitle" data-i18n="register">Register for AgriPredict Smart Farming</p>
+      </div>
+
+      <div id="alert-container"></div>
+
+      <form id="register-form">
+        <div class="form-group">
+          <label class="form-label" for="name">Full Name *</label>
+          <input type="text" id="name" class="form-control" placeholder="e.g. Ramesh Patil" required minlength="2">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="phone">Mobile Number *</label>
+            <input type="tel" id="phone" class="form-control" placeholder="10-digit mobile" required minlength="10">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email">Email Address</label>
+            <input type="email" id="email" class="form-control" placeholder="optional@domain.com">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password (min 6 characters) *</label>
+          <input type="password" id="password" class="form-control" placeholder="Create a secure password" required minlength="6">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="district">District</label>
+            <input type="text" id="district" class="form-control" placeholder="e.g. Pune">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="village">Village</label>
+            <input type="text" id="village" class="form-control" placeholder="e.g. Baramati">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="language">Preferred Language</label>
+          <select id="language" class="form-control">
+            <option value="en">English (en)</option>
+            <option value="mr">मराठी (mr)</option>
+            <option value="hi">हिंदी (hi)</option>
+          </select>
+        </div>
+
+        <button type="submit" id="reg-submit-btn" class="btn btn-primary btn-block" style="margin-top: 1.25rem;">
+          <span data-i18n="register">Register</span>
+        </button>
+      </form>
+
+      <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+        Already have an account? <a href="/ui/login" style="color: var(--primary); font-weight: 600;" data-i18n="login">Login</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      UI.applyTranslations();
+
+      const form = document.getElementById("register-form");
+      const submitBtn = document.getElementById("reg-submit-btn");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        UI.clearAlert("alert-container");
+
+        const payload = {
+          name: document.getElementById("name").value.trim(),
+          phone: document.getElementById("phone").value.trim(),
+          email: document.getElementById("email").value.trim() || null,
+          password: document.getElementById("password").value,
+          district: document.getElementById("district").value.trim() || null,
+          village: document.getElementById("village").value.trim() || null,
+          language: document.getElementById("language").value,
+        };
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Creating account...";
+
+        try {
+          await API.register(payload);
+          // Automatically log in
+          const loginRes = await API.login(payload.phone, payload.password);
+          API.setToken(loginRes.access_token);
+          if (loginRes.farmer) {
+            API.setFarmer(loginRes.farmer);
+          }
+          window.location.href = "/ui/dashboard";
+        } catch (err) {
+          UI.showAlert("alert-container", err.message || "Registration failed.");
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<span data-i18n="register">Register</span>`;
+          UI.applyTranslations();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

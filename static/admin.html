@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Control Center - AgriPredict</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .admin-container {
+      max-width: 1280px;
+      margin: 1.5rem auto 3rem auto;
+      padding: 0 1.25rem;
+    }
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .admin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 700;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+    }
+    .admin-nav-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      background: #f1f5f9;
+      padding: 0.35rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+    }
+    .admin-nav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1rem;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .admin-nav-tab:hover {
+      color: var(--text-main);
+    }
+    .admin-nav-tab.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+    .tab-pane {
+      display: none;
+    }
+    .tab-pane.active {
+      display: block;
+    }
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .grid-3col {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 768px) {
+      .grid-2col, .grid-3col {
+        grid-template-columns: 1fr;
+      }
+    }
+    .json-code {
+      font-family: monospace;
+      font-size: 0.78rem;
+      background: #f8fafc;
+      padding: 0.5rem;
+      border-radius: 4px;
+      max-height: 120px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .csv-drop-zone {
+      border: 2px dashed #94a3b8;
+      border-radius: var(--radius-md);
+      padding: 2rem;
+      text-align: center;
+      background: #f8fafc;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .csv-drop-zone:hover {
+      border-color: var(--primary);
+      background: #f0fdf4;
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+
+  <!-- Access Denied Screen (if not admin) -->
+  <div id="admin-access-denied" class="admin-container" style="display:none; text-align:center; padding: 4rem 1rem;">
+    <div style="font-size: 3.5rem; margin-bottom: 1rem;">🔒</div>
+    <h2 style="font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 0.75rem;">Access Restricted</h2>
+    <p style="color: var(--text-muted); font-size: 1rem; max-width: 480px; margin: 0 auto 1.5rem auto;">
+      The Administration Control Center is strictly reserved for users with the <strong>admin</strong> role. Your account does not have permission to view or modify master catalogs.
+    </p>
+    <a href="/ui/dashboard" class="btn btn-primary">Return to Farmer Dashboard</a>
+  </div>
+
+  <!-- Admin Main Screen -->
+  <div id="admin-main-content" class="admin-container" style="display:none;">
+    <div id="page-alert-box"></div>
+
+    <div class="admin-header">
+      <div>
+        <h1 style="font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-bottom: 0.25rem;">
+          ⚙️ Admin Control Center
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.92rem;">
+          Manage agronomic reference catalogs, mandi prices, user permissions, and audit logs.
+        </p>
+      </div>
+      <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <span class="admin-badge">🛡️ Administrator Access</span>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="admin-nav-tabs">
+      <button type="button" class="admin-nav-tab active" onclick="switchAdminTab('crops')">🌾 Crops</button>
+      <button type="button" class="admin-nav-tab" onclick="switchAdminTab('stages')">📅 Growth Stages</button>
+      <button type="button" class="admin-nav-tab" onclick="switchAdminTab('fertilizers')">🧪 Fertilizers</button>
+      <button type="button" class="admin-nav-tab" onclick="switchAdminTab('rotation')">🔄 Rotation Rules</button>
+      <button type="button" class="admin-nav-tab" onclick="switchAdminTab('prices')">💰 Market Prices</button>
+      <button type="button" class="admin-nav-tab" onclick="switchAdminTab('users')">👥 Users</button>
+      <button type="button" class="admin-nav-tab" onclick="switchAdminTab('audit')">📜 Audit Log</button>
+    </div>
+
+    <!-- TAB 1: CROPS -->
+    <div id="tab-crops" class="tab-pane active">
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div>
+            <h3 style="font-size:1.1rem; font-weight:700;">Agronomic Crops Catalog</h3>
+            <p style="font-size:0.82rem; color:var(--text-muted);">Optimal temperature, rainfall, soil pH, and economic yield baselines</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openAddCropModal()">+ Add New Crop</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Crop Name</th>
+                <th>Season</th>
+                <th>Duration</th>
+                <th>Temp (°C)</th>
+                <th>Rainfall (mm)</th>
+                <th>pH</th>
+                <th>N-P-K (kg/ac)</th>
+                <th>Avg Yield (q/ac)</th>
+                <th>Est Cost (₹/ac)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="crops-tbody">
+              <tr><td colspan="11" style="text-align:center; padding:2rem; color:var(--text-muted);">Loading crops...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: GROWTH STAGES -->
+    <div id="tab-stages" class="tab-pane">
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+            <div>
+              <h3 style="font-size:1.1rem; font-weight:700;">Crop Growth Stages & Calendar Tasks</h3>
+              <p style="font-size:0.82rem; color:var(--text-muted);">Timelines and agronomic task advisories generated for farmers</p>
+            </div>
+            <select id="stage-filter-crop" class="form-control" style="max-width:220px;" onchange="loadCropStages()">
+              <option value="">All Crops</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openAddStageModal()">+ Add Growth Stage</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Stage ID</th>
+                <th>Crop</th>
+                <th>Stage Name</th>
+                <th>Start Day</th>
+                <th>End Day</th>
+                <th>Recommended Action</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="stages-tbody">
+              <tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Loading growth stages...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: FERTILIZERS -->
+    <div id="tab-fertilizers" class="tab-pane">
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div>
+            <h3 style="font-size:1.1rem; font-weight:700;">Fertilizer Composition Catalog</h3>
+            <p style="font-size:0.82rem; color:var(--text-muted);">Nutrient percentages (N-P-K) and market rate per kilogram</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openAddFertilizerModal()">+ Add Fertilizer</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fertilizer Name</th>
+                <th>N (%)</th>
+                <th>P (%)</th>
+                <th>K (%)</th>
+                <th>Price / kg (₹)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="fertilizers-tbody">
+              <tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Loading fertilizers...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: ROTATION RULES -->
+    <div id="tab-rotation" class="tab-pane">
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div>
+            <h3 style="font-size:1.1rem; font-weight:700;">Crop Rotation Rules</h3>
+            <p style="font-size:0.82rem; color:var(--text-muted);">Nutrient replenishment and disease interruption sequence rules</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openAddRotationModal()">+ Add Rotation Rule</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Rule ID</th>
+                <th>Previous Crop</th>
+                <th>Recommended Crop</th>
+                <th>Agronomic Reason</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="rotation-tbody">
+              <tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--text-muted);">Loading rotation rules...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: MARKET PRICES & CSV UPLOAD -->
+    <div id="tab-prices" class="tab-pane">
+      <!-- CSV Bulk Upload Card -->
+      <div class="card" style="margin-bottom:1.5rem; background:#ffffff; border:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+          <div>
+            <h3 style="font-size:1.1rem; font-weight:700;">📤 Bulk CSV Upload for Market Mandi Prices</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">
+              Upload daily APMC mandi rates. Automatic trigger computes 10% price surges and issues farmer alerts.
+            </p>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="downloadSampleCsv()">📥 Download CSV Template</button>
+        </div>
+
+        <form id="csv-upload-form" onsubmit="handleCsvUpload(event)">
+          <div class="csv-drop-zone" onclick="document.getElementById('csv-file-input').click()">
+            <div style="font-size:2rem; margin-bottom:0.4rem;">📄</div>
+            <p style="font-weight:600; color:#334155; margin-bottom:0.25rem;">Choose or Drag & Drop Mandi Prices CSV</p>
+            <p style="font-size:0.82rem; color:var(--text-muted);">Columns: <code>crop_name, district, price_per_quintal, price_date</code></p>
+            <input type="file" id="csv-file-input" accept=".csv" style="display:none;" onchange="handleFileSelect(event)">
+            <p id="csv-selected-name" style="margin-top:0.75rem; font-weight:700; color:var(--primary);"></p>
+          </div>
+          <div style="margin-top:1rem; display:flex; justify-content:flex-end;">
+            <button type="submit" id="csv-submit-btn" class="btn btn-primary" disabled>Upload & Ingest Prices</button>
+          </div>
+        </form>
+
+        <!-- CSV Result Alert & Error Report -->
+        <div id="csv-result-box" style="margin-top:1rem; display:none;"></div>
+      </div>
+
+      <!-- Current Market Prices Table -->
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            <h3 style="font-size:1.1rem; font-weight:700;">Market Mandi Rates</h3>
+            <select id="price-filter-crop" class="form-control" style="max-width:200px;" onchange="loadAdminPrices()">
+              <option value="">All Crops</option>
+            </select>
+            <input type="text" id="price-filter-district" class="form-control" placeholder="Filter district..." style="max-width:180px;" oninput="loadAdminPrices()">
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openAddPriceModal()">+ Add Price Entry</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Crop</th>
+                <th>District</th>
+                <th>Rate / Quintal (₹)</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="prices-tbody">
+              <tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Loading market prices...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: USERS -->
+    <div id="tab-users" class="tab-pane">
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div>
+            <h3 style="font-size:1.1rem; font-weight:700;">Registered Farmer & Admin Accounts</h3>
+            <p style="font-size:0.82rem; color:var(--text-muted);">View registered profiles, district assignments, and toggle account activation</p>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="loadAdminUsers()">🔄 Refresh Users</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Farmer ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>District</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody">
+              <tr><td colspan="9" style="text-align:center; padding:2rem; color:var(--text-muted);">Loading users...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 7: AUDIT LOG -->
+    <div id="tab-audit" class="tab-pane">
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            <h3 style="font-size:1.1rem; font-weight:700;">Administrative Audit Trail</h3>
+            <select id="audit-filter-table" class="form-control" style="max-width:180px;" onchange="loadAdminAuditLog()">
+              <option value="">All Tables</option>
+              <option value="crops">crops</option>
+              <option value="market_prices">market_prices</option>
+              <option value="fertilizers">fertilizers</option>
+            </select>
+            <input type="number" id="audit-filter-record" class="form-control" placeholder="Record ID..." style="max-width:130px;" oninput="loadAdminAuditLog()">
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="loadAdminAuditLog()">🔄 Refresh Log</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Log ID</th>
+                <th>Table</th>
+                <th>Record ID</th>
+                <th>Action</th>
+                <th>Operator</th>
+                <th>Timestamp</th>
+                <th>Changes Recorded</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody">
+              <tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Loading audit logs...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT CROP -->
+  <div id="crop-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="crop-modal-title">Add New Crop</h3>
+        <button type="button" class="modal-close" onclick="UI.closeModal('crop-modal')">&times;</button>
+      </div>
+      <form id="crop-form" onsubmit="handleSaveCrop(event)">
+        <input type="hidden" id="crop-id-input">
+        <div class="modal-body">
+          <div id="crop-modal-alert"></div>
+          <div class="grid-2col">
+            <div class="form-group">
+              <label class="form-label" for="crop-name">Crop Name *</label>
+              <input type="text" id="crop-name" class="form-control" required minlength="2" maxlength="60" placeholder="e.g. Cotton">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="crop-season">Season *</label>
+              <select id="crop-season" class="form-control" required>
+                <option value="Kharif">Kharif</option>
+                <option value="Rabi">Rabi</option>
+                <option value="Zaid">Zaid</option>
+                <option value="Annual">Annual</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid-3col">
+            <div class="form-group">
+              <label class="form-label" for="crop-duration">Duration (Days) *</label>
+              <input type="number" id="crop-duration" class="form-control" required min="1" placeholder="e.g. 120">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="crop-yield">Avg Yield (q/ac) *</label>
+              <input type="number" step="0.1" min="0" id="crop-yield" class="form-control" required placeholder="e.g. 15.0">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="crop-cost">Est Cost (₹/ac) *</label>
+              <input type="number" step="0.1" min="0" id="crop-cost" class="form-control" required placeholder="e.g. 18000">
+            </div>
+          </div>
+          <div class="grid-2col">
+            <div class="form-group">
+              <label class="form-label">Soil pH (0 - 14)</label>
+              <div style="display:flex; gap:0.5rem;">
+                <input type="number" step="0.1" min="0" max="14" id="crop-min-ph" class="form-control" placeholder="Min pH">
+                <input type="number" step="0.1" min="0" max="14" id="crop-max-ph" class="form-control" placeholder="Max pH">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Temperature (°C)</label>
+              <div style="display:flex; gap:0.5rem;">
+                <input type="number" step="0.1" id="crop-min-temp" class="form-control" placeholder="Min °C">
+                <input type="number" step="0.1" id="crop-max-temp" class="form-control" placeholder="Max °C">
+              </div>
+            </div>
+          </div>
+          <div class="grid-2col">
+            <div class="form-group">
+              <label class="form-label">Rainfall (mm)</label>
+              <div style="display:flex; gap:0.5rem;">
+                <input type="number" step="0.1" min="0" id="crop-min-rain" class="form-control" placeholder="Min mm">
+                <input type="number" step="0.1" min="0" id="crop-max-rain" class="form-control" placeholder="Max mm">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Relative Humidity (%)</label>
+              <div style="display:flex; gap:0.5rem;">
+                <input type="number" step="0.1" min="0" max="100" id="crop-min-hum" class="form-control" placeholder="Min %">
+                <input type="number" step="0.1" min="0" max="100" id="crop-max-hum" class="form-control" placeholder="Max %">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Recommended N - P - K (kg / acre)</label>
+            <div class="grid-3col">
+              <input type="number" min="0" id="crop-n" class="form-control" placeholder="N req">
+              <input type="number" min="0" id="crop-p" class="form-control" placeholder="P req">
+              <input type="number" min="0" id="crop-k" class="form-control" placeholder="K req">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('crop-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="save-crop-btn">Save Crop</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT STAGE -->
+  <div id="stage-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="stage-modal-title">Add Growth Stage</h3>
+        <button type="button" class="modal-close" onclick="UI.closeModal('stage-modal')">&times;</button>
+      </div>
+      <form id="stage-form" onsubmit="handleSaveStage(event)">
+        <input type="hidden" id="stage-id-input">
+        <div class="modal-body">
+          <div id="stage-modal-alert"></div>
+          <div class="form-group">
+            <label class="form-label" for="stage-crop-id">Crop *</label>
+            <select id="stage-crop-id" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="stage-name">Stage Name *</label>
+            <input type="text" id="stage-name" class="form-control" required placeholder="e.g. Vegetative Branching">
+          </div>
+          <div class="grid-2col">
+            <div class="form-group">
+              <label class="form-label" for="stage-start">Start Day *</label>
+              <input type="number" min="0" id="stage-start" class="form-control" required placeholder="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="stage-end">End Day *</label>
+              <input type="number" min="0" id="stage-end" class="form-control" required placeholder="30">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="stage-task">Agronomic Task / Advisory</label>
+            <textarea id="stage-task" class="form-control" rows="3" placeholder="Apply first top-dressing of Urea and inspect for leaf curl..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('stage-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="save-stage-btn">Save Stage</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT FERTILIZER -->
+  <div id="fertilizer-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="fertilizer-modal-title">Add Fertilizer</h3>
+        <button type="button" class="modal-close" onclick="UI.closeModal('fertilizer-modal')">&times;</button>
+      </div>
+      <form id="fertilizer-form" onsubmit="handleSaveFertilizer(event)">
+        <input type="hidden" id="fertilizer-id-input">
+        <div class="modal-body">
+          <div id="fertilizer-modal-alert"></div>
+          <div class="form-group">
+            <label class="form-label" for="fert-name">Fertilizer Name *</label>
+            <input type="text" id="fert-name" class="form-control" required placeholder="e.g. Urea 46% N">
+          </div>
+          <div class="grid-3col">
+            <div class="form-group">
+              <label class="form-label" for="fert-n">N (%) *</label>
+              <input type="number" step="0.1" min="0" max="100" id="fert-n" class="form-control" required value="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fert-p">P (%) *</label>
+              <input type="number" step="0.1" min="0" max="100" id="fert-p" class="form-control" required value="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fert-k">K (%) *</label>
+              <input type="number" step="0.1" min="0" max="100" id="fert-k" class="form-control" required value="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fert-price">Price / kg (₹)</label>
+            <input type="number" step="0.01" min="0" id="fert-price" class="form-control" placeholder="e.g. 6.50">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('fertilizer-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="save-fertilizer-btn">Save Fertilizer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT ROTATION RULE -->
+  <div id="rotation-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="rotation-modal-title">Add Rotation Rule</h3>
+        <button type="button" class="modal-close" onclick="UI.closeModal('rotation-modal')">&times;</button>
+      </div>
+      <form id="rotation-form" onsubmit="handleSaveRotation(event)">
+        <input type="hidden" id="rotation-id-input">
+        <div class="modal-body">
+          <div id="rotation-modal-alert"></div>
+          <div class="form-group">
+            <label class="form-label" for="rot-prev-crop">Previous Crop *</label>
+            <select id="rot-prev-crop" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="rot-next-crop">Recommended Subsequent Crop *</label>
+            <select id="rot-next-crop" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="rot-reason">Agronomic Justification</label>
+            <textarea id="rot-reason" class="form-control" rows="3" placeholder="Fixes biological atmospheric nitrogen and disrupts pest life cycles..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('rotation-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="save-rotation-btn">Save Rule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT MARKET PRICE -->
+  <div id="price-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Add / Upsert Mandi Price</h3>
+        <button type="button" class="modal-close" onclick="UI.closeModal('price-modal')">&times;</button>
+      </div>
+      <form id="price-form" onsubmit="handleSavePrice(event)">
+        <div class="modal-body">
+          <div id="price-modal-alert"></div>
+          <div class="form-group">
+            <label class="form-label" for="price-crop-id">Crop *</label>
+            <select id="price-crop-id" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="price-district">District *</label>
+            <input type="text" id="price-district" class="form-control" required placeholder="e.g. Pune">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="price-qtl">Price / Quintal (₹) *</label>
+            <input type="number" step="0.01" min="0.01" id="price-qtl" class="form-control" required placeholder="e.g. 2450.00">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="price-date">Price Date *</label>
+            <input type="date" id="price-date" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('price-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="save-price-btn">Upsert Price</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script>
+    let globalCrops = [];
+    let selectedCsvFile = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (!UI.requireAuth()) return;
+      UI.renderNavbar("admin");
+
+      const farmer = API.getFarmer();
+      if (!farmer || farmer.role !== "admin") {
+        document.getElementById("admin-access-denied").style.display = "block";
+        return;
+      }
+
+      document.getElementById("admin-main-content").style.display = "block";
+      const today = new Date().toISOString().split("T")[0];
+      const priceDateInput = document.getElementById("price-date");
+      if (priceDateInput) priceDateInput.value = today;
+
+      await loadAllCrops();
+      await loadCropStages();
+      await loadFertilizers();
+      await loadRotationRules();
+      await loadAdminPrices();
+      await loadAdminUsers();
+      await loadAdminAuditLog();
+    });
+
+    function switchAdminTab(tabKey) {
+      document.querySelectorAll(".admin-nav-tab").forEach(btn => btn.classList.remove("active"));
+      document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.remove("active"));
+
+      const targetBtn = Array.from(document.querySelectorAll(".admin-nav-tab")).find(b => b.getAttribute("onclick")?.includes(tabKey));
+      if (targetBtn) targetBtn.classList.add("active");
+
+      const targetPane = document.getElementById(`tab-${tabKey}`);
+      if (targetPane) targetPane.classList.add("active");
+    }
+
+    // ==========================================
+    // 1. CROPS CRUD
+    // ==========================================
+    async function loadAllCrops() {
+      try {
+        globalCrops = await API.getAdminCrops();
+        renderCropsTable(globalCrops);
+        populateCropDropdowns(globalCrops);
+      } catch (err) {
+        UI.showAlert("page-alert-box", "Error loading crops: " + err.message);
+      }
+    }
+
+    function populateCropDropdowns(crops) {
+      const dropdownIds = ["stage-filter-crop", "stage-crop-id", "rot-prev-crop", "rot-next-crop", "price-filter-crop", "price-crop-id"];
+      dropdownIds.forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const currentVal = sel.value;
+        const hasAll = id.includes("filter");
+        sel.innerHTML = hasAll ? '<option value="">All Crops</option>' : '<option value="">Select Crop...</option>';
+        crops.forEach(c => {
+          sel.innerHTML += `<option value="${c.crop_id}">${c.crop_name} (${c.season})</option>`;
+        });
+        if (currentVal) sel.value = currentVal;
+      });
+    }
+
+    function renderCropsTable(crops) {
+      const tbody = document.getElementById("crops-tbody");
+      if (!crops || crops.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:2rem; color:var(--text-muted);">No crops found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = crops.map(c => `
+        <tr>
+          <td><strong>#${c.crop_id}</strong></td>
+          <td><strong>${c.crop_name}</strong></td>
+          <td><span class="badge badge-growing">${c.season}</span></td>
+          <td>${c.duration_days} days</td>
+          <td>${c.min_temp ?? '—'} - ${c.max_temp ?? '—'}</td>
+          <td>${c.min_rainfall ?? '—'} - ${c.max_rainfall ?? '—'}</td>
+          <td>${c.min_ph ?? '—'} - ${c.max_ph ?? '—'}</td>
+          <td>${c.n_required ?? 0}-${c.p_required ?? 0}-${c.k_required ?? 0}</td>
+          <td style="font-weight:600; color:var(--primary);">${c.avg_yield_q_per_acre ?? '—'} q/ac</td>
+          <td style="font-weight:600; color:var(--accent);">₹${(c.est_cost_per_acre ?? 0).toLocaleString()}</td>
+          <td>
+            <div style="display:flex; gap:0.35rem;">
+              <button class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:0.2rem 0.5rem;" onclick='openEditCropModal(${JSON.stringify(c)})'>Edit</button>
+              <button class="btn btn-secondary btn-sm" style="color:var(--danger); font-size:0.75rem; padding:0.2rem 0.5rem;" onclick="handleDeleteCrop(${c.crop_id}, '${c.crop_name}')">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function openAddCropModal() {
+      document.getElementById("crop-modal-title").textContent = "Add New Crop";
+      document.getElementById("crop-id-input").value = "";
+      document.getElementById("crop-form").reset();
+      UI.clearAlert("crop-modal-alert");
+      UI.openModal("crop-modal");
+    }
+
+    function openEditCropModal(c) {
+      document.getElementById("crop-modal-title").textContent = `Edit Crop: ${c.crop_name}`;
+      document.getElementById("crop-id-input").value = c.crop_id;
+      document.getElementById("crop-name").value = c.crop_name;
+      document.getElementById("crop-season").value = c.season;
+      document.getElementById("crop-duration").value = c.duration_days;
+      document.getElementById("crop-yield").value = c.avg_yield_q_per_acre ?? "";
+      document.getElementById("crop-cost").value = c.est_cost_per_acre ?? "";
+      document.getElementById("crop-min-ph").value = c.min_ph ?? "";
+      document.getElementById("crop-max-ph").value = c.max_ph ?? "";
+      document.getElementById("crop-min-temp").value = c.min_temp ?? "";
+      document.getElementById("crop-max-temp").value = c.max_temp ?? "";
+      document.getElementById("crop-min-rain").value = c.min_rainfall ?? "";
+      document.getElementById("crop-max-rain").value = c.max_rainfall ?? "";
+      document.getElementById("crop-min-hum").value = c.min_humidity ?? "";
+      document.getElementById("crop-max-hum").value = c.max_humidity ?? "";
+      document.getElementById("crop-n").value = c.n_required ?? "";
+      document.getElementById("crop-p").value = c.p_required ?? "";
+      document.getElementById("crop-k").value = c.k_required ?? "";
+      UI.clearAlert("crop-modal-alert");
+      UI.openModal("crop-modal");
+    }
+
+    async function handleSaveCrop(e) {
+      e.preventDefault();
+      UI.clearAlert("crop-modal-alert");
+
+      const cropId = document.getElementById("crop-id-input").value;
+      const minPh = document.getElementById("crop-min-ph").value ? parseFloat(document.getElementById("crop-min-ph").value) : null;
+      const maxPh = document.getElementById("crop-max-ph").value ? parseFloat(document.getElementById("crop-max-ph").value) : null;
+      const minTemp = document.getElementById("crop-min-temp").value ? parseFloat(document.getElementById("crop-min-temp").value) : null;
+      const maxTemp = document.getElementById("crop-max-temp").value ? parseFloat(document.getElementById("crop-max-temp").value) : null;
+      const minRain = document.getElementById("crop-min-rain").value ? parseFloat(document.getElementById("crop-min-rain").value) : null;
+      const maxRain = document.getElementById("crop-max-rain").value ? parseFloat(document.getElementById("crop-max-rain").value) : null;
+
+      if (minPh !== null && maxPh !== null && minPh > maxPh) {
+        UI.showAlert("crop-modal-alert", "Min pH cannot exceed Max pH.");
+        return;
+      }
+      if (minTemp !== null && maxTemp !== null && minTemp > maxTemp) {
+        UI.showAlert("crop-modal-alert", "Min Temp cannot exceed Max Temp.");
+        return;
+      }
+      if (minRain !== null && maxRain !== null && minRain > maxRain) {
+        UI.showAlert("crop-modal-alert", "Min Rainfall cannot exceed Max Rainfall.");
+        return;
+      }
+
+      const payload = {
+        crop_name: document.getElementById("crop-name").value.trim(),
+        season: document.getElementById("crop-season").value,
+        duration_days: parseInt(document.getElementById("crop-duration").value),
+        avg_yield_q_per_acre: document.getElementById("crop-yield").value ? parseFloat(document.getElementById("crop-yield").value) : null,
+        est_cost_per_acre: document.getElementById("crop-cost").value ? parseFloat(document.getElementById("crop-cost").value) : null,
+        min_ph: minPh,
+        max_ph: maxPh,
+        min_temp: minTemp,
+        max_temp: maxTemp,
+        min_rainfall: minRain,
+        max_rainfall: maxRain,
+        min_humidity: document.getElementById("crop-min-hum").value ? parseFloat(document.getElementById("crop-min-hum").value) : null,
+        max_humidity: document.getElementById("crop-max-hum").value ? parseFloat(document.getElementById("crop-max-hum").value) : null,
+        n_required: document.getElementById("crop-n").value ? parseInt(document.getElementById("crop-n").value) : null,
+        p_required: document.getElementById("crop-p").value ? parseInt(document.getElementById("crop-p").value) : null,
+        k_required: document.getElementById("crop-k").value ? parseInt(document.getElementById("crop-k").value) : null,
+      };
+
+      try {
+        if (cropId) {
+          await API.updateAdminCrop(cropId, payload);
+          UI.showAlert("page-alert-box", `Crop "${payload.crop_name}" updated successfully.`, "success");
+        } else {
+          await API.createAdminCrop(payload);
+          UI.showAlert("page-alert-box", `Crop "${payload.crop_name}" created successfully.`, "success");
+        }
+        UI.closeModal("crop-modal");
+        await loadAllCrops();
+        await loadAdminAuditLog();
+      } catch (err) {
+        UI.showAlert("crop-modal-alert", err.message || "Failed to save crop.");
+      }
+    }
+
+    async function handleDeleteCrop(cropId, cropName) {
+      if (!confirm(`Are you sure you want to delete crop "${cropName}" (#${cropId})?`)) return;
+      try {
+        await API.deleteAdminCrop(cropId);
+        UI.showAlert("page-alert-box", `Crop "${cropName}" deleted successfully.`, "success");
+        await loadAllCrops();
+        await loadAdminAuditLog();
+      } catch (err) {
+        // Handle 409 Conflict nicely
+        alert("Cannot delete crop: " + err.message);
+      }
+    }
+
+    // ==========================================
+    // 2. GROWTH STAGES CRUD
+    // ==========================================
+    async function loadCropStages() {
+      try {
+        const cropId = document.getElementById("stage-filter-crop").value || null;
+        const stages = await API.getAdminCropStages(cropId);
+        renderStagesTable(stages);
+      } catch (err) {
+        console.warn("Could not load stages", err);
+      }
+    }
+
+    function renderStagesTable(stages) {
+      const tbody = document.getElementById("stages-tbody");
+      if (!stages || stages.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">No growth stages recorded.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = stages.map(s => `
+        <tr>
+          <td>#${s.stage_id}</td>
+          <td><strong>${s.crop_name || 'Crop #' + s.crop_id}</strong></td>
+          <td>${s.stage_name}</td>
+          <td>Day ${s.start_day}</td>
+          <td>Day ${s.end_day}</td>
+          <td style="max-width:320px; font-size:0.85rem;">${s.task || '—'}</td>
+          <td>
+            <div style="display:flex; gap:0.35rem;">
+              <button class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:0.2rem 0.5rem;" onclick='openEditStageModal(${JSON.stringify(s)})'>Edit</button>
+              <button class="btn btn-secondary btn-sm" style="color:var(--danger); font-size:0.75rem; padding:0.2rem 0.5rem;" onclick="handleDeleteStage(${s.stage_id})">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function openAddStageModal() {
+      document.getElementById("stage-modal-title").textContent = "Add Growth Stage";
+      document.getElementById("stage-id-input").value = "";
+      document.getElementById("stage-form").reset();
+      UI.clearAlert("stage-modal-alert");
+      UI.openModal("stage-modal");
+    }
+
+    function openEditStageModal(s) {
+      document.getElementById("stage-modal-title").textContent = `Edit Stage: ${s.stage_name}`;
+      document.getElementById("stage-id-input").value = s.stage_id;
+      document.getElementById("stage-crop-id").value = s.crop_id;
+      document.getElementById("stage-name").value = s.stage_name;
+      document.getElementById("stage-start").value = s.start_day;
+      document.getElementById("stage-end").value = s.end_day;
+      document.getElementById("stage-task").value = s.task || "";
+      UI.clearAlert("stage-modal-alert");
+      UI.openModal("stage-modal");
+    }
+
+    async function handleSaveStage(e) {
+      e.preventDefault();
+      UI.clearAlert("stage-modal-alert");
+
+      const stageId = document.getElementById("stage-id-input").value;
+      const startDay = parseInt(document.getElementById("stage-start").value);
+      const endDay = parseInt(document.getElementById("stage-end").value);
+
+      if (startDay > endDay) {
+        UI.showAlert("stage-modal-alert", "Start Day cannot be greater than End Day.");
+        return;
+      }
+
+      const payload = {
+        crop_id: parseInt(document.getElementById("stage-crop-id").value),
+        stage_name: document.getElementById("stage-name").value.trim(),
+        start_day: startDay,
+        end_day: endDay,
+        task: document.getElementById("stage-task").value.trim() || null,
+      };
+
+      try {
+        if (stageId) {
+          await API.updateAdminCropStage(stageId, payload);
+          UI.showAlert("page-alert-box", `Stage "${payload.stage_name}" updated.`, "success");
+        } else {
+          await API.createAdminCropStage(payload);
+          UI.showAlert("page-alert-box", `Stage "${payload.stage_name}" created.`, "success");
+        }
+        UI.closeModal("stage-modal");
+        await loadCropStages();
+      } catch (err) {
+        UI.showAlert("stage-modal-alert", err.message || "Failed to save stage.");
+      }
+    }
+
+    async function handleDeleteStage(stageId) {
+      if (!confirm("Are you sure you want to delete this stage?")) return;
+      try {
+        await API.deleteAdminCropStage(stageId);
+        UI.showAlert("page-alert-box", "Stage deleted successfully.", "success");
+        await loadCropStages();
+      } catch (err) {
+        alert("Failed to delete stage: " + err.message);
+      }
+    }
+
+    // ==========================================
+    // 3. FERTILIZERS CRUD
+    // ==========================================
+    async function loadFertilizers() {
+      try {
+        const ferts = await API.getAdminFertilizers();
+        renderFertilizersTable(ferts);
+      } catch (err) {
+        console.warn("Could not load fertilizers", err);
+      }
+    }
+
+    function renderFertilizersTable(ferts) {
+      const tbody = document.getElementById("fertilizers-tbody");
+      if (!ferts || ferts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">No fertilizers found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = ferts.map(f => `
+        <tr>
+          <td>#${f.fert_id}</td>
+          <td><strong>${f.name}</strong></td>
+          <td>${f.n_pct}%</td>
+          <td>${f.p_pct}%</td>
+          <td>${f.k_pct}%</td>
+          <td style="font-weight:600; color:var(--accent);">${f.price_per_kg !== null ? '₹' + f.price_per_kg.toFixed(2) : '—'}</td>
+          <td>
+            <div style="display:flex; gap:0.35rem;">
+              <button class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:0.2rem 0.5rem;" onclick='openEditFertilizerModal(${JSON.stringify(f)})'>Edit</button>
+              <button class="btn btn-secondary btn-sm" style="color:var(--danger); font-size:0.75rem; padding:0.2rem 0.5rem;" onclick="handleDeleteFertilizer(${f.fert_id})">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function openAddFertilizerModal() {
+      document.getElementById("fertilizer-modal-title").textContent = "Add Fertilizer";
+      document.getElementById("fertilizer-id-input").value = "";
+      document.getElementById("fertilizer-form").reset();
+      UI.clearAlert("fertilizer-modal-alert");
+      UI.openModal("fertilizer-modal");
+    }
+
+    function openEditFertilizerModal(f) {
+      document.getElementById("fertilizer-modal-title").textContent = `Edit Fertilizer: ${f.name}`;
+      document.getElementById("fertilizer-id-input").value = f.fert_id;
+      document.getElementById("fert-name").value = f.name;
+      document.getElementById("fert-n").value = f.n_pct;
+      document.getElementById("fert-p").value = f.p_pct;
+      document.getElementById("fert-k").value = f.k_pct;
+      document.getElementById("fert-price").value = f.price_per_kg ?? "";
+      UI.clearAlert("fertilizer-modal-alert");
+      UI.openModal("fertilizer-modal");
+    }
+
+    async function handleSaveFertilizer(e) {
+      e.preventDefault();
+      UI.clearAlert("fertilizer-modal-alert");
+
+      const fertId = document.getElementById("fertilizer-id-input").value;
+      const payload = {
+        name: document.getElementById("fert-name").value.trim(),
+        n_pct: parseFloat(document.getElementById("fert-n").value),
+        p_pct: parseFloat(document.getElementById("fert-p").value),
+        k_pct: parseFloat(document.getElementById("fert-k").value),
+        price_per_kg: document.getElementById("fert-price").value ? parseFloat(document.getElementById("fert-price").value) : null,
+      };
+
+      try {
+        if (fertId) {
+          await API.updateAdminFertilizer(fertId, payload);
+          UI.showAlert("page-alert-box", `Fertilizer "${payload.name}" updated.`, "success");
+        } else {
+          await API.createAdminFertilizer(payload);
+          UI.showAlert("page-alert-box", `Fertilizer "${payload.name}" created.`, "success");
+        }
+        UI.closeModal("fertilizer-modal");
+        await loadFertilizers();
+      } catch (err) {
+        UI.showAlert("fertilizer-modal-alert", err.message || "Failed to save fertilizer.");
+      }
+    }
+
+    async function handleDeleteFertilizer(fertId) {
+      if (!confirm("Are you sure you want to delete this fertilizer?")) return;
+      try {
+        await API.deleteAdminFertilizer(fertId);
+        UI.showAlert("page-alert-box", "Fertilizer deleted.", "success");
+        await loadFertilizers();
+      } catch (err) {
+        alert("Failed to delete fertilizer: " + err.message);
+      }
+    }
+
+    // ==========================================
+    // 4. ROTATION RULES CRUD
+    // ==========================================
+    async function loadRotationRules() {
+      try {
+        const rules = await API.getAdminRotationRules();
+        renderRotationTable(rules);
+      } catch (err) {
+        console.warn("Could not load rotation rules", err);
+      }
+    }
+
+    function renderRotationTable(rules) {
+      const tbody = document.getElementById("rotation-tbody");
+      if (!rules || rules.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--text-muted);">No rotation rules defined.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rules.map(r => `
+        <tr>
+          <td>#${r.rule_id}</td>
+          <td><strong>${r.previous_crop_name || 'Crop #' + r.previous_crop_id}</strong></td>
+          <td><strong style="color:var(--primary);">${r.recommended_crop_name || 'Crop #' + r.recommended_crop_id}</strong></td>
+          <td style="max-width:350px; font-size:0.85rem;">${r.reason || '—'}</td>
+          <td>
+            <div style="display:flex; gap:0.35rem;">
+              <button class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:0.2rem 0.5rem;" onclick='openEditRotationModal(${JSON.stringify(r)})'>Edit</button>
+              <button class="btn btn-secondary btn-sm" style="color:var(--danger); font-size:0.75rem; padding:0.2rem 0.5rem;" onclick="handleDeleteRotation(${r.rule_id})">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function openAddRotationModal() {
+      document.getElementById("rotation-modal-title").textContent = "Add Rotation Rule";
+      document.getElementById("rotation-id-input").value = "";
+      document.getElementById("rotation-form").reset();
+      UI.clearAlert("rotation-modal-alert");
+      UI.openModal("rotation-modal");
+    }
+
+    function openEditRotationModal(r) {
+      document.getElementById("rotation-modal-title").textContent = `Edit Rotation Rule #${r.rule_id}`;
+      document.getElementById("rotation-id-input").value = r.rule_id;
+      document.getElementById("rot-prev-crop").value = r.previous_crop_id;
+      document.getElementById("rot-next-crop").value = r.recommended_crop_id;
+      document.getElementById("rot-reason").value = r.reason || "";
+      UI.clearAlert("rotation-modal-alert");
+      UI.openModal("rotation-modal");
+    }
+
+    async function handleSaveRotation(e) {
+      e.preventDefault();
+      UI.clearAlert("rotation-modal-alert");
+
+      const ruleId = document.getElementById("rotation-id-input").value;
+      const prevCrop = parseInt(document.getElementById("rot-prev-crop").value);
+      const nextCrop = parseInt(document.getElementById("rot-next-crop").value);
+
+      if (prevCrop === nextCrop) {
+        UI.showAlert("rotation-modal-alert", "Previous and Recommended crops cannot be identical.");
+        return;
+      }
+
+      const payload = {
+        previous_crop_id: prevCrop,
+        recommended_crop_id: nextCrop,
+        reason: document.getElementById("rot-reason").value.trim() || null,
+      };
+
+      try {
+        if (ruleId) {
+          await API.updateAdminRotationRule(ruleId, payload);
+          UI.showAlert("page-alert-box", "Rotation rule updated.", "success");
+        } else {
+          await API.createAdminRotationRule(payload);
+          UI.showAlert("page-alert-box", "Rotation rule created.", "success");
+        }
+        UI.closeModal("rotation-modal");
+        await loadRotationRules();
+      } catch (err) {
+        UI.showAlert("rotation-modal-alert", err.message || "Failed to save rotation rule.");
+      }
+    }
+
+    async function handleDeleteRotation(ruleId) {
+      if (!confirm("Delete this rotation rule?")) return;
+      try {
+        await API.deleteAdminRotationRule(ruleId);
+        UI.showAlert("page-alert-box", "Rotation rule deleted.", "success");
+        await loadRotationRules();
+      } catch (err) {
+        alert("Failed to delete rule: " + err.message);
+      }
+    }
+
+    // ==========================================
+    // 5. MARKET MANDI PRICES & CSV UPLOAD
+    // ==========================================
+    async function loadAdminPrices() {
+      try {
+        const cropId = document.getElementById("price-filter-crop").value || null;
+        const district = document.getElementById("price-filter-district").value.trim() || null;
+        const prices = await API.getAdminMarketPrices({ crop_id: cropId, district: district, limit: 100 });
+        renderPricesTable(prices);
+      } catch (err) {
+        console.warn("Could not load prices", err);
+      }
+    }
+
+    function renderPricesTable(prices) {
+      const tbody = document.getElementById("prices-tbody");
+      if (!prices || prices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">No market prices found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = prices.map(p => `
+        <tr>
+          <td>#${p.price_id}</td>
+          <td><strong>${p.crop_name || 'Crop #' + p.crop_id}</strong></td>
+          <td>${p.district}</td>
+          <td style="font-weight:700; color:var(--primary);">₹${p.price_per_quintal.toLocaleString()}</td>
+          <td>${UI.formatDate(p.price_date)}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" style="color:var(--danger); font-size:0.75rem; padding:0.2rem 0.5rem;" onclick="handleDeletePrice(${p.price_id})">Delete</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function openAddPriceModal() {
+      document.getElementById("price-form").reset();
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("price-date").value = today;
+      UI.clearAlert("price-modal-alert");
+      UI.openModal("price-modal");
+    }
+
+    async function handleSavePrice(e) {
+      e.preventDefault();
+      UI.clearAlert("price-modal-alert");
+
+      const payload = {
+        crop_id: parseInt(document.getElementById("price-crop-id").value),
+        district: document.getElementById("price-district").value.trim(),
+        price_per_quintal: parseFloat(document.getElementById("price-qtl").value),
+        price_date: document.getElementById("price-date").value,
+      };
+
+      try {
+        await API.upsertAdminMarketPrice(payload);
+        UI.showAlert("page-alert-box", `Market price upserted for ${payload.district}.`, "success");
+        UI.closeModal("price-modal");
+        await loadAdminPrices();
+        await loadAdminAuditLog();
+      } catch (err) {
+        UI.showAlert("price-modal-alert", err.message || "Failed to upsert price.");
+      }
+    }
+
+    async function handleDeletePrice(priceId) {
+      if (!confirm("Are you sure you want to delete this price record?")) return;
+      try {
+        await API.deleteAdminMarketPrice(priceId);
+        UI.showAlert("page-alert-box", "Market price deleted.", "success");
+        await loadAdminPrices();
+        await loadAdminAuditLog();
+      } catch (err) {
+        alert("Failed to delete price: " + err.message);
+      }
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      selectedCsvFile = file;
+      document.getElementById("csv-selected-name").textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      document.getElementById("csv-submit-btn").disabled = false;
+    }
+
+    async function handleCsvUpload(e) {
+      e.preventDefault();
+      if (!selectedCsvFile) return;
+
+      const submitBtn = document.getElementById("csv-submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Uploading & Ingesting...";
+
+      const resultBox = document.getElementById("csv-result-box");
+      resultBox.style.display = "block";
+      resultBox.innerHTML = '<div style="color:var(--text-muted);">Processing CSV records...</div>';
+
+      const formData = new FormData();
+      formData.append("file", selectedCsvFile);
+
+      try {
+        const res = await API.uploadMarketPricesCsv(formData);
+        let reportHtml = `
+          <div style="background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem;">
+            <h4 style="font-weight:700; margin-bottom:0.5rem; color:#0f172a;">📊 CSV Ingestion Summary</h4>
+            <div style="display:flex; gap:1.5rem; margin-bottom:0.75rem;">
+              <div><strong>Total Rows:</strong> ${res.total_rows}</div>
+              <div style="color:var(--success); font-weight:700;"><strong>Imported:</strong> ${res.imported}</div>
+              <div style="color:${res.errors?.length ? 'var(--danger)' : 'var(--text-muted)'}; font-weight:700;">
+                <strong>Errors:</strong> ${res.errors?.length || 0}
+              </div>
+            </div>
+        `;
+
+        if (res.errors && res.errors.length > 0) {
+          reportHtml += `
+            <div style="max-height:200px; overflow-y:auto; border-top:1px solid var(--border); padding-top:0.5rem;">
+              <table class="data-table" style="font-size:0.8rem;">
+                <thead>
+                  <tr>
+                    <th>Row</th>
+                    <th>Raw Line Content</th>
+                    <th>Reason / Error</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${res.errors.map(err => `
+                    <tr>
+                      <td><span class="badge badge-failed">Row ${err.row}</span></td>
+                      <td class="json-code">${JSON.stringify(err.raw)}</td>
+                      <td style="color:var(--danger);">${err.error}</td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+          `;
+        }
+
+        reportHtml += "</div>";
+        resultBox.innerHTML = reportHtml;
+        UI.showAlert("page-alert-box", `CSV ingestion complete: ${res.imported} prices upserted.`, "success");
+        await loadAdminPrices();
+        await loadAdminAuditLog();
+      } catch (err) {
+        resultBox.innerHTML = `<div class="alert alert-danger">CSV Upload Failed: ${err.message}</div>`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Upload & Ingest Prices";
+      }
+    }
+
+    function downloadSampleCsv() {
+      const csvHeader = "crop_name,district,price_per_quintal,price_date\n";
+      const sampleRows = [
+        "Cotton,Wardha,7250,2026-10-01",
+        "Soybean,Wardha,4850,2026-10-01",
+        "Wheat,Pune,2450,2026-10-01",
+        "Rice,Nashik,3100,2026-10-01"
+      ].join("\n");
+      const blob = new Blob([csvHeader + sampleRows], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "market_prices_sample.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // ==========================================
+    // 6. USERS MANAGEMENT
+    // ==========================================
+    async function loadAdminUsers() {
+      try {
+        const users = await API.getAdminUsers();
+        renderUsersTable(users);
+      } catch (err) {
+        console.warn("Could not load users", err);
+      }
+    }
+
+    function renderUsersTable(users) {
+      const tbody = document.getElementById("users-tbody");
+      if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem; color:var(--text-muted);">No users found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => {
+        const isActive = u.is_active;
+        const statusBadge = isActive
+          ? '<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700;">Active</span>'
+          : '<span class="badge badge-failed">Disabled</span>';
+
+        return `
+          <tr>
+            <td><strong>#${u.farmer_id}</strong></td>
+            <td><strong>${u.name}</strong></td>
+            <td>${u.phone || '—'}</td>
+            <td>${u.email || '—'}</td>
+            <td>${u.district || '—'}</td>
+            <td><span class="badge ${u.role === 'admin' ? 'badge-rain' : 'badge-growing'}">${u.role}</span></td>
+            <td>${statusBadge}</td>
+            <td>${u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'}</td>
+            <td>
+              <button
+                class="btn btn-secondary btn-sm"
+                style="font-size:0.75rem; padding:0.25rem 0.6rem; color:${isActive ? 'var(--danger)' : 'var(--success)'};"
+                onclick="handleToggleUser(${u.farmer_id}, '${u.name}', ${!isActive})"
+              >
+                ${isActive ? '🚫 Deactivate' : '✓ Activate'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function handleToggleUser(userId, userName, newActiveStatus) {
+      const actionName = newActiveStatus ? "activate" : "deactivate";
+      if (!confirm(`Are you sure you want to ${actionName} account for "${userName}" (#${userId})?`)) return;
+
+      try {
+        await API.toggleUserActive(userId, newActiveStatus);
+        UI.showAlert("page-alert-box", `User "${userName}" ${actionName}d successfully.`, "success");
+        await loadAdminUsers();
+      } catch (err) {
+        alert("Failed to update user status: " + err.message);
+      }
+    }
+
+    // ==========================================
+    // 7. AUDIT LOG VIEWER
+    // ==========================================
+    async function loadAdminAuditLog() {
+      try {
+        const table = document.getElementById("audit-filter-table").value || null;
+        const recordId = document.getElementById("audit-filter-record").value || null;
+        const logs = await API.getAdminAuditLog({ table: table, record_id: recordId, limit: 50 });
+        renderAuditTable(logs);
+      } catch (err) {
+        console.warn("Could not load audit log", err);
+      }
+    }
+
+    function renderAuditTable(logs) {
+      const tbody = document.getElementById("audit-tbody");
+      if (!logs || logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">No audit log records found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = logs.map(l => {
+        let actionBadge = "";
+        if (l.action === "INSERT") actionBadge = '<span class="badge badge-growing">INSERT</span>';
+        else if (l.action === "UPDATE") actionBadge = '<span class="badge badge-rain">UPDATE</span>';
+        else actionBadge = '<span class="badge badge-failed">DELETE</span>';
+
+        return `
+          <tr>
+            <td>#${l.log_id}</td>
+            <td><code>${l.table_name}</code></td>
+            <td>#${l.record_id}</td>
+            <td>${actionBadge}</td>
+            <td><strong>${l.changed_by}</strong></td>
+            <td>${new Date(l.changed_at).toLocaleString()}</td>
+            <td style="max-width:320px;">
+              <details style="cursor:pointer; font-size:0.8rem;">
+                <summary style="color:var(--primary); font-weight:600;">View JSON Diff</summary>
+                <div style="margin-top:0.35rem;">
+                  ${l.old_data ? `<div><strong>Old:</strong><div class="json-code">${JSON.stringify(l.old_data, null, 2)}</div></div>` : ''}
+                  ${l.new_data ? `<div style="margin-top:0.35rem;"><strong>New:</strong><div class="json-code">${JSON.stringify(l.new_data, null, 2)}</div></div>` : ''}
+                </div>
+              </details>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+  </script>
+</body>
+</html>

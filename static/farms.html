@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Farms - AgriPredict</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+
+  <div class="container">
+    <div id="alert-container"></div>
+
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">
+          <span>🚜</span> <span data-i18n="my_farms">My Farms</span>
+        </h2>
+        <p class="section-subtitle">Manage your plots, soil chemistry, weather caching, and AI crop recommendations</p>
+      </div>
+      <button type="button" class="btn btn-primary" onclick="openAddFarmModal()">
+        <span>+ Add Farm</span>
+      </button>
+    </div>
+
+    <!-- Farms List Grid -->
+    <div id="farms-container" class="cycles-grid">
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="empty-state-icon">⏳</div>
+        <p>Loading your farms...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 1: Add/Edit Farm -->
+  <div id="farm-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="farm-modal-title" class="modal-title">Add New Farm</h3>
+        <button type="button" class="modal-close" onclick="UI.closeModal('farm-modal')">&times;</button>
+      </div>
+      <form id="farm-form">
+        <input type="hidden" id="farm-id-hidden">
+        <div class="modal-body">
+          <div id="farm-modal-alert"></div>
+          <div class="form-group">
+            <label class="form-label" for="farm-name">Farm Name *</label>
+            <input type="text" id="farm-name" class="form-control" placeholder="e.g. Ganga Plot" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="area-acres">Area (in Acres) *</label>
+            <input type="number" step="0.1" min="0.1" id="area-acres" class="form-control" placeholder="e.g. 5.5" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="farm-lat">Latitude</label>
+              <input type="number" step="0.0001" id="farm-lat" class="form-control" placeholder="e.g. 18.5204">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="farm-lon">Longitude</label>
+              <input type="number" step="0.0001" id="farm-lon" class="form-control" placeholder="e.g. 73.8567">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="soil-type">Soil Type</label>
+              <select id="soil-type" class="form-control">
+                <option value="">Select soil...</option>
+                <option value="Black">Black Soil</option>
+                <option value="Red">Red Soil</option>
+                <option value="Alluvial">Alluvial Soil</option>
+                <option value="Laterite">Laterite Soil</option>
+                <option value="Sandy">Sandy Soil</option>
+                <option value="Clay">Clay Soil</option>
+                <option value="Loamy">Loamy Soil</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="irrigation">Irrigation Source</label>
+              <select id="irrigation" class="form-control">
+                <option value="Rainfed">Rainfed</option>
+                <option value="Canal">Canal</option>
+                <option value="Well">Well</option>
+                <option value="Drip">Drip</option>
+                <option value="Sprinkler">Sprinkler</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('farm-modal')">Cancel</button>
+          <button type="submit" id="save-farm-btn" class="btn btn-primary">Save Farm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Record Soil Test -->
+  <div id="soil-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Record Soil Test</h3>
+        <button type="button" class="modal-close" onclick="UI.closeModal('soil-modal')">&times;</button>
+      </div>
+      <form id="soil-form">
+        <input type="hidden" id="soil-farm-id">
+        <div class="modal-body">
+          <div id="soil-modal-alert"></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="soil-n">Nitrogen (N) kg/ha *</label>
+              <input type="number" step="0.1" min="0" id="soil-n" class="form-control" placeholder="e.g. 80.0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="soil-p">Phosphorus (P) kg/ha *</label>
+              <input type="number" step="0.1" min="0" id="soil-p" class="form-control" placeholder="e.g. 45.0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="soil-k">Potassium (K) kg/ha *</label>
+              <input type="number" step="0.1" min="0" id="soil-k" class="form-control" placeholder="e.g. 40.0" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="soil-ph">Soil pH (0 - 14) *</label>
+              <input type="number" step="0.1" min="0" max="14" id="soil-ph" class="form-control" placeholder="e.g. 6.5" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="soil-moisture">Moisture % (0 - 100)</label>
+              <input type="number" step="0.1" min="0" max="100" id="soil-moisture" class="form-control" placeholder="e.g. 65.0">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="soil-oc">Organic Carbon %</label>
+              <input type="number" step="0.01" min="0" id="soil-oc" class="form-control" placeholder="e.g. 0.75">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="soil-date">Test Date</label>
+            <input type="date" id="soil-date" class="form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('soil-modal')">Cancel</button>
+          <button type="submit" id="save-soil-btn" class="btn btn-primary">Save Test</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Crop Recommendations & Breakdown -->
+  <div id="recom-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">🌾 Crop Recommendations & Economic Forecast</h3>
+          <p id="recom-farm-name-subtitle" style="font-size:0.8rem; color:var(--text-muted);"></p>
+        </div>
+        <button type="button" class="modal-close" onclick="UI.closeModal('recom-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="recom-modal-alert"></div>
+        <div id="recom-results-container">
+          <div class="empty-state">
+            <p>Analyzing soil chemistry and weather conditions...</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="UI.closeModal('recom-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Sowing Date Picker ("Start this crop") -->
+  <div id="start-crop-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">🌱 Start Crop Cycle</h3>
+        <button type="button" class="modal-close" onclick="UI.closeModal('start-crop-modal')">&times;</button>
+      </div>
+      <form id="start-crop-form">
+        <input type="hidden" id="start-farm-id">
+        <input type="hidden" id="start-crop-id">
+        <input type="hidden" id="start-prediction-id">
+
+        <div class="modal-body">
+          <div id="start-modal-alert"></div>
+
+          <div style="background:var(--primary-bg); border-radius:var(--radius-sm); padding:0.85rem; margin-bottom:1rem;">
+            <div style="font-size:0.85rem; color:var(--primary-dark); font-weight:700;">Selected Crop:</div>
+            <div id="start-crop-display" style="font-size:1.15rem; font-weight:800; color:#064e3b;">Rice</div>
+            <div id="start-farm-display" style="font-size:0.85rem; color:#334155; margin-top:0.2rem;">Plot Alpha</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="sowing-date">Sowing Date *</label>
+            <input type="date" id="sowing-date" class="form-control" required>
+            <small style="color:var(--text-muted); font-size:0.75rem;">
+              Selecting today or earlier sets status to "Growing". Future dates set status to "Planned".
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('start-crop-modal')">Cancel</button>
+          <button type="submit" id="confirm-start-btn" class="btn btn-primary">Start Crop Cycle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 5: Fertilizer Plan -->
+  <div id="fertilizer-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 650px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">🧪 Fertilizer Plan</h3>
+          <p id="fert-modal-subtitle" style="font-size:0.8rem; color:var(--text-muted);"></p>
+        </div>
+        <button type="button" class="modal-close" onclick="UI.closeModal('fertilizer-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="fert-modal-alert"></div>
+        <div id="fert-modal-content">
+          <div class="empty-state">
+            <p>Calculating nutrient dosages based on soil test...</p>
+          </div>
+        </div>
+        <div class="disclaimer-box">
+          ℹ️ <strong>Note:</strong> Fertilizer dosage amounts are indicative estimations calculated from soil test nutrient deficits. Always cross-check against recommendations from your local Agriculture Department or Krishi Vigyan Kendra (KVK).
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="UI.closeModal('fertilizer-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 6: What to Grow Next (Rotation Advice) -->
+  <div id="rotation-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 650px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">🔄 What to Grow Next</h3>
+          <p id="rotation-modal-subtitle" style="font-size:0.8rem; color:var(--text-muted);"></p>
+        </div>
+        <button type="button" class="modal-close" onclick="UI.closeModal('rotation-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="rotation-modal-alert"></div>
+        <div id="rotation-modal-content">
+          <div class="empty-state">
+            <p>Analyzing crop succession rules and season...</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="UI.closeModal('rotation-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script>
+    let currentFarmsList = [];
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (!UI.requireAuth()) return;
+      UI.renderNavbar("farms");
+
+      // Set default soil test date to today
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("soil-date").value = today;
+      document.getElementById("sowing-date").value = today;
+
+      await loadFarms();
+
+      // Form Bindings
+      document.getElementById("farm-form").addEventListener("submit", handleSaveFarm);
+      document.getElementById("soil-form").addEventListener("submit", handleSaveSoil);
+      document.getElementById("start-crop-form").addEventListener("submit", handleStartCycle);
+    });
+
+    async function loadFarms() {
+      try {
+        currentFarmsList = await API.getFarms();
+        renderFarmsList(currentFarmsList);
+      } catch (err) {
+        UI.showAlert("alert-container", "Error loading farms: " + err.message);
+      }
+    }
+
+    function renderFarmsList(farms) {
+      const container = document.getElementById("farms-container");
+      if (!farms || farms.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="grid-column: 1 / -1; background:#ffffff; border:1px dashed var(--border); border-radius:var(--radius-lg);">
+            <div class="empty-state-icon">🚜</div>
+            <h3 style="font-weight:700; color:#334155; margin-bottom:0.4rem;">No Farms Added Yet</h3>
+            <p style="font-size:0.9rem; margin-bottom:1.25rem;">Add your farm plot details to get personalized crop recommendations.</p>
+            <button type="button" class="btn btn-primary" onclick="openAddFarmModal()">+ Add Your First Farm</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = farms.map((f) => {
+        const hasGps = f.latitude !== null && f.longitude !== null;
+        return `
+          <div class="cycle-card">
+            <div>
+              <div class="cycle-card-top">
+                <div>
+                  <h3 class="cycle-crop-name">${f.farm_name}</h3>
+                  <div class="cycle-farm-name">📏 ${f.area_acres} Acres &bull; ${f.irrigation}</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="openEditFarmModal(${f.farm_id})">✏️ Edit</button>
+              </div>
+
+              <div class="cycle-metrics" style="margin-top:0.75rem;">
+                <div class="cycle-metric-item">
+                  <span class="label">Soil Type:</span>
+                  <span class="val">${f.soil_type || 'Unspecified'}</span>
+                </div>
+                <div class="cycle-metric-item">
+                  <span class="label">GPS:</span>
+                  <span class="val">${hasGps ? `${f.latitude.toFixed(2)}, ${f.longitude.toFixed(2)}` : 'No GPS'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:1rem;">
+              <button class="btn btn-primary btn-sm btn-block" onclick="openRecommendModal(${f.farm_id}, '${f.farm_name}')">
+                ✨ <span data-i18n="recommend_crop">Recommend Crop</span>
+              </button>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <button class="btn btn-secondary btn-sm" onclick="openSoilModal(${f.farm_id})">
+                  🧪 Soil Test
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="handleRefreshWeather(${f.farm_id})">
+                  ⛅ Weather
+                </button>
+              </div>
+
+              <button class="btn btn-secondary btn-sm btn-block" style="background:#f8fafc; border-color:#cbd5e1;" onclick="openRotationAdviceModal(${f.farm_id}, '${f.farm_name}')">
+                🔄 What to Grow Next
+              </button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // Modal Helpers
+    function openAddFarmModal() {
+      document.getElementById("farm-modal-title").textContent = "Add New Farm";
+      document.getElementById("farm-id-hidden").value = "";
+      document.getElementById("farm-name").value = "";
+      document.getElementById("area-acres").value = "";
+      document.getElementById("farm-lat").value = "";
+      document.getElementById("farm-lon").value = "";
+      document.getElementById("soil-type").value = "";
+      document.getElementById("irrigation").value = "Rainfed";
+      UI.clearAlert("farm-modal-alert");
+      UI.openModal("farm-modal");
+    }
+
+    function openEditFarmModal(farmId) {
+      const f = currentFarmsList.find(x => x.farm_id === farmId);
+      if (!f) return;
+
+      document.getElementById("farm-modal-title").textContent = "Edit Farm: " + f.farm_name;
+      document.getElementById("farm-id-hidden").value = f.farm_id;
+      document.getElementById("farm-name").value = f.farm_name;
+      document.getElementById("area-acres").value = f.area_acres;
+      document.getElementById("farm-lat").value = f.latitude !== null ? f.latitude : "";
+      document.getElementById("farm-lon").value = f.longitude !== null ? f.longitude : "";
+      document.getElementById("soil-type").value = f.soil_type || "";
+      document.getElementById("irrigation").value = f.irrigation || "Rainfed";
+      UI.clearAlert("farm-modal-alert");
+      UI.openModal("farm-modal");
+    }
+
+    async function handleSaveFarm(e) {
+      e.preventDefault();
+      UI.clearAlert("farm-modal-alert");
+
+      const farmId = document.getElementById("farm-id-hidden").value;
+      const payload = {
+        farm_name: document.getElementById("farm-name").value.trim(),
+        area_acres: parseFloat(document.getElementById("area-acres").value),
+        latitude: document.getElementById("farm-lat").value ? parseFloat(document.getElementById("farm-lat").value) : null,
+        longitude: document.getElementById("farm-lon").value ? parseFloat(document.getElementById("farm-lon").value) : null,
+        soil_type: document.getElementById("soil-type").value || null,
+        irrigation: document.getElementById("irrigation").value || "Rainfed",
+      };
+
+      try {
+        if (farmId) {
+          await API.updateFarm(farmId, payload);
+          UI.showAlert("alert-container", "Farm updated successfully!", "success");
+        } else {
+          await API.createFarm(payload);
+          UI.showAlert("alert-container", "Farm added successfully!", "success");
+        }
+        UI.closeModal("farm-modal");
+        await loadFarms();
+      } catch (err) {
+        UI.showAlert("farm-modal-alert", err.message || "Failed to save farm.");
+      }
+    }
+
+    function openSoilModal(farmId) {
+      document.getElementById("soil-farm-id").value = farmId;
+      document.getElementById("soil-n").value = "";
+      document.getElementById("soil-p").value = "";
+      document.getElementById("soil-k").value = "";
+      document.getElementById("soil-ph").value = "";
+      document.getElementById("soil-moisture").value = "";
+      document.getElementById("soil-oc").value = "";
+      UI.clearAlert("soil-modal-alert");
+      UI.openModal("soil-modal");
+    }
+
+    async function handleSaveSoil(e) {
+      e.preventDefault();
+      UI.clearAlert("soil-modal-alert");
+
+      const farmId = document.getElementById("soil-farm-id").value;
+      const payload = {
+        nitrogen: parseFloat(document.getElementById("soil-n").value),
+        phosphorus: parseFloat(document.getElementById("soil-p").value),
+        potassium: parseFloat(document.getElementById("soil-k").value),
+        ph: parseFloat(document.getElementById("soil-ph").value),
+        moisture: document.getElementById("soil-moisture").value ? parseFloat(document.getElementById("soil-moisture").value) : null,
+        organic_carbon: document.getElementById("soil-oc").value ? parseFloat(document.getElementById("soil-oc").value) : null,
+        test_date: document.getElementById("soil-date").value || null,
+      };
+
+      try {
+        await API.createSoilTest(farmId, payload);
+        UI.closeModal("soil-modal");
+        UI.showAlert("alert-container", "Soil test recorded successfully! You can now get crop recommendations.", "success");
+      } catch (err) {
+        UI.showAlert("soil-modal-alert", err.message || "Failed to record soil test.");
+      }
+    }
+
+    async function handleRefreshWeather(farmId) {
+      try {
+        const res = await API.refreshWeather(farmId, true);
+        UI.showAlert("alert-container", `⛅ Weather synced: ${res.records_synced} days refreshed (${res.cached ? 'cached' : 'fresh API'})`, "info");
+      } catch (err) {
+        UI.showAlert("alert-container", `Weather sync error: ${err.message}`, "danger");
+      }
+    }
+
+    async function openRecommendModal(farmId, farmName) {
+      document.getElementById("recom-farm-name-subtitle").textContent = `Plot: ${farmName}`;
+      UI.clearAlert("recom-modal-alert");
+      const container = document.getElementById("recom-results-container");
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🔄</div>
+          <p>Running agronomic suitability scoring procedure...</p>
+        </div>
+      `;
+      UI.openModal("recom-modal");
+
+      try {
+        const res = await API.recommendCrops(farmId, { season: "auto" });
+        if (!res.recommendations || res.recommendations.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <p>No crops matched your soil and weather criteria.</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Fetch economic and profit estimates for recommendations
+        let profitMap = {};
+        try {
+          const profitData = await API.getFarmProfitEstimates(farmId);
+          if (profitData && profitData.estimates) {
+            profitData.estimates.forEach((p) => {
+              profitMap[p.crop_id] = p;
+            });
+          }
+        } catch (e) {
+          console.warn("Could not fetch profit estimates:", e);
+        }
+
+        container.innerHTML = `
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-sm); padding:0.65rem 0.85rem; margin-bottom:1rem; font-size:0.8rem; color:#166534; display:flex; gap:0.5rem; align-items:center;">
+            <span>💡</span>
+            <span><strong>Note on Economics:</strong> Expected price, yield, and cultivation costs are indicative estimates based on regional university crop budgets and recent APMC mandi rates. Actual yields and profits vary with weather and market conditions.</span>
+          </div>
+        ` + res.recommendations.map((c) => {
+          const p = profitMap[c.crop_id] || {};
+          const hasPrice = p.price_per_quintal !== null && p.price_per_quintal !== undefined;
+          const isPositiveProfit = (p.profit_per_acre || 0) >= 0;
+
+          return `
+            <div class="recom-card ${c.rank_no === 1 ? 'top-rank' : ''}" style="margin-bottom:1rem; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:1rem; background:#fff;">
+              <div class="recom-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
+                <div>
+                  <span style="font-size:0.75rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px;">
+                    Rank #${c.rank_no} &bull; ${UI.translateSeason(c.season)}
+                  </span>
+                  <h4 style="font-size:1.25rem; font-weight:800; color:#0f172a; margin:0.15rem 0;">${UI.translateCrop(c.crop_name)}</h4>
+                </div>
+                <div style="text-align:right;">
+                  <span style="font-size:1.45rem; font-weight:800; color:var(--primary-dark);">${c.suitability}%</span>
+                  <div style="font-size:0.75rem; color:var(--text-muted);">Suitability</div>
+                </div>
+              </div>
+
+              <!-- Agronomic Factor Scores -->
+              <div class="recom-scores-grid" style="display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.85rem;">
+                <div class="score-chip"><span class="k">pH</span><span class="v">${c.ph_score}%</span></div>
+                <div class="score-chip"><span class="k">Temp</span><span class="v">${c.temp_score}%</span></div>
+                <div class="score-chip"><span class="k">Humidity</span><span class="v">${c.humidity_score}%</span></div>
+                <div class="score-chip"><span class="k">Rainfall</span><span class="v">${c.rain_score}%</span></div>
+                <div class="score-chip"><span class="k">N</span><span class="v">${c.n_score}%</span></div>
+                <div class="score-chip"><span class="k">P</span><span class="v">${c.p_score}%</span></div>
+                <div class="score-chip"><span class="k">K</span><span class="v">${c.k_score}%</span></div>
+              </div>
+
+              <!-- Economic Forecast Box -->
+              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-sm); padding:0.75rem 0.85rem; margin-bottom:0.85rem;">
+                <div style="font-size:0.75rem; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom:0.5rem; letter-spacing:0.5px; display:flex; justify-content:space-between;">
+                  <span>💰 Financial Economics (Estimated)</span>
+                  ${p.price_district ? `<span style="font-weight:600; color:#64748b;">Mandi: ${p.price_district}</span>` : ''}
+                </div>
+                ${hasPrice ? `
+                  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:0.6rem; font-size:0.85rem;">
+                    <div>
+                      <div style="font-size:0.72rem; color:#64748b;">Expected Price</div>
+                      <div style="font-weight:700; color:#0f172a;">${UI.formatCurrency(p.price_per_quintal)}/q</div>
+                    </div>
+                    <div>
+                      <div style="font-size:0.72rem; color:#64748b;">Gross Revenue / Acre</div>
+                      <div style="font-weight:700; color:#0f172a;">${UI.formatCurrency(p.revenue_per_acre)}</div>
+                    </div>
+                    <div>
+                      <div style="font-size:0.72rem; color:#64748b;">Profit / Acre</div>
+                      <div style="font-weight:800; color:${isPositiveProfit ? '#16a34a' : '#dc2626'};">${UI.formatCurrency(p.profit_per_acre)}</div>
+                    </div>
+                    <div>
+                      <div style="font-size:0.72rem; color:#64748b;">Profit / Acre / Month</div>
+                      <div style="font-weight:700; color:${isPositiveProfit ? '#16a34a' : '#dc2626'};">${UI.formatCurrency(p.profit_per_acre_per_month)}</div>
+                    </div>
+                    <div style="grid-column: 1 / -1; background:#ecfdf5; border:1px dashed #6ee7b7; border-radius:4px; padding:0.4rem 0.6rem; display:flex; justify-content:space-between; align-items:center;">
+                      <span style="font-weight:700; color:#065f46; font-size:0.82rem;">Farm Projected Net Profit:</span>
+                      <span style="font-size:1.05rem; font-weight:800; color:#047857;">${UI.formatCurrency(p.profit_for_farm)}</span>
+                    </div>
+                  </div>
+                ` : `
+                  <div style="font-size:0.8rem; color:#64748b; font-style:italic;">
+                    ℹ️ No current mandi price data recorded for this crop yet. Showing agronomic scores only.
+                  </div>
+                `}
+              </div>
+
+              <!-- Action Buttons -->
+              <div style="display:flex; justify-content:flex-end; gap:0.5rem; flex-wrap:wrap;">
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  onclick="openFertilizerPlanModal(${farmId}, '${farmName}', ${c.crop_id}, '${c.crop_name}')"
+                >
+                  🧪 Fertilizer Plan
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  onclick="openStartCropModal(${farmId}, '${farmName}', ${c.crop_id}, '${c.crop_name}', ${c.prediction_id || 'null'})"
+                >
+                  🌱 Start This Crop
+                </button>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+      } catch (err) {
+        UI.showAlert("recom-modal-alert", err.message || "Failed to generate recommendations. Please ensure you recorded a soil test.");
+        container.innerHTML = "";
+      }
+    }
+
+    async function openFertilizerPlanModal(farmId, farmName, cropId, cropName) {
+      document.getElementById("fert-modal-subtitle").textContent = `${farmName} • Crop: ${cropName}`;
+      UI.clearAlert("fert-modal-alert");
+      const contentEl = document.getElementById("fert-modal-content");
+      contentEl.innerHTML = `<div class="empty-state"><p>Calculating nutrient dosages based on latest soil test...</p></div>`;
+      UI.openModal("fertilizer-modal");
+
+      try {
+        const res = await API.getFertilizerAdvice(farmId, { crop_id: cropId });
+        if (!res.fertilizers || res.fertilizers.length === 0) {
+          contentEl.innerHTML = `
+            <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:var(--radius-sm); padding:1rem; text-align:center; color:#166534;">
+              <div style="font-size:1.5rem; margin-bottom:0.25rem;">🌱</div>
+              <div style="font-weight:700;">${res.message || 'Soil nutrient levels are sufficient.'}</div>
+              <p style="font-size:0.85rem; margin-top:0.35rem; color:#15803d;">Your latest soil test indicates adequate NPK reserves for ${cropName}. No extra chemical fertilizers required.</p>
+            </div>
+          `;
+          return;
+        }
+
+        let totalCost = res.fertilizers.reduce((sum, f) => sum + (f.estimated_cost || 0), 0);
+
+        contentEl.innerHTML = `
+          <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">
+            ${res.message}
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fertilizer</th>
+                  <th style="text-align:right;">Kg / Acre</th>
+                  <th style="text-align:right;">Farm Total</th>
+                  <th style="text-align:right;">Est. Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${res.fertilizers.map(f => `
+                  <tr>
+                    <td><strong>${f.fertilizer}</strong></td>
+                    <td style="text-align:right;">${f.kg_per_acre} kg</td>
+                    <td style="text-align:right; font-weight:600;">${f.kg_for_farm} kg</td>
+                    <td style="text-align:right; color:var(--primary-dark); font-weight:700;">${UI.formatCurrency(f.estimated_cost)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+              <tfoot>
+                <tr style="background:#f8fafc; font-weight:800;">
+                  <td colspan="3">Estimated Total Cost:</td>
+                  <td style="text-align:right; color:var(--primary-dark);">${UI.formatCurrency(totalCost)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        `;
+      } catch (err) {
+        UI.showAlert("fert-modal-alert", err.message || "Failed to load fertilizer advice.");
+        contentEl.innerHTML = "";
+      }
+    }
+
+    async function openRotationAdviceModal(farmId, farmName) {
+      document.getElementById("rotation-modal-subtitle").textContent = `Plot: ${farmName}`;
+      UI.clearAlert("rotation-modal-alert");
+      const contentEl = document.getElementById("rotation-modal-content");
+      contentEl.innerHTML = `<div class="empty-state"><p>Analyzing crop succession rules and current season...</p></div>`;
+      UI.openModal("rotation-modal");
+
+      try {
+        const res = await API.getRotationAdvice(farmId);
+        if (!res.advice || res.advice.length === 0) {
+          contentEl.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🌾</div>
+              <h4 style="font-weight:700; color:#334155; margin-bottom:0.35rem;">No Closed Cycles Yet</h4>
+              <p style="font-size:0.88rem; color:var(--text-muted); max-width:420px; margin:0 auto;">
+                ${res.message || "No completed crop cycle found for this farm. Record a harvested or closed cycle to receive crop rotation advice."}
+              </p>
+            </div>
+          `;
+          return;
+        }
+
+        contentEl.innerHTML = `
+          <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">
+            ${res.message}
+          </div>
+          <div>
+            ${res.advice.map(item => `
+              <div class="rotation-card ${item.is_in_season ? 'in-season' : ''}">
+                <div style="flex:1;">
+                  <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                    <h4 style="font-size:1.1rem; font-weight:700; color:#0f172a;">${UI.translateCrop(item.crop_name)}</h4>
+                    <span class="badge ${item.is_in_season ? 'badge-growing' : ''}" style="font-size:0.75rem;">
+                      ${item.is_in_season ? '🌟 ' + UI.translateSeason(item.season) : UI.translateSeason(item.season)}
+                    </span>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">(${item.duration_days} days)</span>
+                  </div>
+                  <p style="font-size:0.85rem; color:#475569; margin:0;">
+                    💡 <em>${item.reason || 'Beneficial rotation crop to break pests and restore soil.'}</em>
+                  </p>
+                </div>
+                <div style="margin-left:1rem;">
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    onclick="UI.closeModal('rotation-modal'); openStartCropModal(${farmId}, '${farmName}', ${item.crop_id}, '${item.crop_name}', null)"
+                  >
+                    Start Crop
+                  </button>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      } catch (err) {
+        UI.showAlert("rotation-modal-alert", err.message || "Failed to load crop rotation advice.");
+        contentEl.innerHTML = "";
+      }
+    }
+
+    function openStartCropModal(farmId, farmName, cropId, cropName, predictionId) {
+      document.getElementById("start-farm-id").value = farmId;
+      document.getElementById("start-crop-id").value = cropId;
+      document.getElementById("start-prediction-id").value = predictionId || "";
+      document.getElementById("start-crop-display").textContent = cropName;
+      document.getElementById("start-farm-display").textContent = `Farm: ${farmName}`;
+      UI.clearAlert("start-modal-alert");
+
+      // Close recommend modal first
+      UI.closeModal("recom-modal");
+      UI.openModal("start-crop-modal");
+    }
+
+    async function handleStartCycle(e) {
+      e.preventDefault();
+      UI.clearAlert("start-modal-alert");
+
+      const farmId = document.getElementById("start-farm-id").value;
+      const cropId = parseInt(document.getElementById("start-crop-id").value);
+      const predictionIdVal = document.getElementById("start-prediction-id").value;
+      const predictionId = predictionIdVal ? parseInt(predictionIdVal) : null;
+      const sowingDate = document.getElementById("sowing-date").value;
+
+      const confirmBtn = document.getElementById("confirm-start-btn");
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Starting cycle...";
+
+      try {
+        const cycle = await API.startCycle(farmId, {
+          crop_id: cropId,
+          prediction_id: predictionId,
+          sowing_date: sowingDate,
+        });
+
+        UI.closeModal("start-crop-modal");
+        UI.showAlert("alert-container", `Crop cycle started for ${cycle.crop_name}!`, "success");
+        // Redirect to cycle detail page
+        setTimeout(() => {
+          window.location.href = `/ui/cycle-detail?id=${cycle.cycle_id}`;
+        }, 800);
+      } catch (err) {
+        // Clear message in modal: e.g. "This farm already has an active crop cycle. Close it first."
+        UI.showAlert("start-modal-alert", err.message || "Could not start crop cycle.");
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Start Crop Cycle";
+      }
+    }
+  </script>
+</body>
+</html>

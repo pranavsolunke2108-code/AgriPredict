@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - AgriPredict</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+        <div class="lang-switch">
+          <button type="button" class="lang-btn active" data-lang="en" onclick="UI.switchLanguage('en')">EN</button>
+          <button type="button" class="lang-btn" data-lang="mr" onclick="UI.switchLanguage('mr')">MR</button>
+          <button type="button" class="lang-btn" data-lang="hi" onclick="UI.switchLanguage('hi')">HI</button>
+        </div>
+      </div>
+
+      <div class="auth-header">
+        <div style="font-size: 2.4rem; margin-bottom: 0.25rem;">🌱</div>
+        <h1 class="auth-title">AgriPredict</h1>
+        <p class="auth-subtitle" data-i18n="login">Sign in to your farmer account</p>
+      </div>
+
+      <div id="alert-container"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="identifier">Phone Number or Email</label>
+          <input
+            type="text"
+            id="identifier"
+            class="form-control"
+            placeholder="e.g. 9876543210 or farmer@agri.in"
+            required
+            autocomplete="username"
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            class="form-control"
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
+          >
+        </div>
+
+        <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block" style="margin-top: 1.25rem;">
+          <span data-i18n="login">Login</span>
+        </button>
+      </form>
+
+      <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+        Don't have an account? <a href="/ui/register" style="color: var(--primary); font-weight: 600;" data-i18n="register">Register</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // If already logged in, redirect to dashboard
+      if (API.getToken()) {
+        window.location.href = "/ui/dashboard";
+        return;
+      }
+
+      UI.applyTranslations();
+
+      const form = document.getElementById("login-form");
+      const submitBtn = document.getElementById("login-submit-btn");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        UI.clearAlert("alert-container");
+
+        const identifier = document.getElementById("identifier").value.trim();
+        const password = document.getElementById("password").value;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Logging in...";
+
+        try {
+          const res = await API.login(identifier, password);
+          API.setToken(res.access_token);
+          const farmerObj = res.farmer || (await API.getMe());
+          API.setFarmer(farmerObj);
+          if (farmerObj && farmerObj.language) {
+            API.setLang(farmerObj.language);
+          }
+          window.location.href = "/ui/dashboard";
+        } catch (err) {
+          UI.showAlert("alert-container", err.message || "Invalid credentials. Please try again.");
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<span data-i18n="login">Login</span>`;
+          UI.applyTranslations();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
