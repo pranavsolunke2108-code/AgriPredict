@@ -1,29 +1,32 @@
 /* AgriPredict Phase 3 Modern Agricultural Design System */
+@import url('./theme.css');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-  --primary: #059669;
-  --primary-dark: #047857;
-  --primary-light: #10b981;
-  --primary-subtle: #d1fae5;
-  --primary-bg: #ecfdf5;
+  --primary: #2F7D4F;
+  --primary-dark: #1F5F3A;
+  --primary-light: #5CC48A;
+  --primary-subtle: var(--primary-subtle);
+  --primary-bg: var(--primary-subtle);
 
-  --accent: #d97706;
-  --accent-light: #f59e0b;
-  --accent-subtle: #fef3c7;
+  --accent: var(--accent-gold);
+  --accent-light: var(--accent-gold);
+  --accent-subtle: var(--accent-gold-subtle);
 
-  --success: #16a34a;
-  --warning: #f59e0b;
-  --danger: #dc2626;
-  --danger-subtle: #fee2e2;
-  --info: #0284c7;
-  --info-subtle: #e0f2fe;
+  --success: var(--success);
+  --warning: var(--warning-terracotta);
+  --danger: var(--danger);
+  --danger-subtle: var(--danger-subtle);
+  --info: var(--info-water);
+  --info-subtle: var(--info-subtle);
 
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --text-light: #94a3b8;
-  --bg-page: #f8fafc;
-  --bg-card: #ffffff;
-  --border: #e2e8f0;
-  --border-focus: #10b981;
+  --text-main: var(--ink);
+  --text-muted: var(--muted);
+  --text-light: var(--muted-light);
+  --bg-page: var(--bg);
+  --bg-card: var(--surface);
+  --border: var(--border);
+  --border-focus: var(--primary);
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -34,7 +37,7 @@
   --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.04);
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.05);
 
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  --font-family: 'Noto Sans Devanagari', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 }
 
 * {
@@ -52,6 +55,19 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+button, input, select, textarea, .nav, .nav-link, .nav-brand, .btn, table, th, td {
+  font-family: var(--font-family);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Navbar */
@@ -607,6 +623,7 @@ table.data-table tr:hover td {
   visibility: hidden;
   transition: all 0.2s ease;
   padding: 1rem;
+  overflow-y: auto;
 }
 
 .modal-overlay.active {
@@ -624,6 +641,15 @@ table.data-table tr:hover td {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  margin: auto;
+}
+
+.modal-content > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .modal-header {
@@ -632,6 +658,7 @@ table.data-table tr:hover td {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -651,6 +678,9 @@ table.data-table tr:hover td {
 .modal-body {
   padding: 1.25rem;
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-footer {
@@ -660,6 +690,7 @@ table.data-table tr:hover td {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 /* Alert Banner */
@@ -902,4 +933,162 @@ table.data-table tr:hover td {
   border-color: #86efac;
   background: #f0fdf4;
 }
+
+/* Toast Notification System */
+#toast-container {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: 380px;
+  width: calc(100% - 2.5rem);
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.15rem;
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid var(--primary);
+  font-size: 0.88rem;
+  font-weight: 500;
+  animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.toast-success { border-left-color: #10b981; }
+.toast-danger { border-left-color: #ef4444; }
+.toast-warning { border-left-color: #f59e0b; }
+.toast-info { border-left-color: #3b82f6; }
+
+.toast-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.toast-message {
+  flex: 1;
+  line-height: 1.4;
+}
+.toast-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0 0.2rem;
+  line-height: 1;
+}
+.toast-close:hover {
+  color: #475569;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Auth Guard Protected Page Initial State to prevent content flash */
+body.auth-protected {
+  visibility: hidden;
+  opacity: 0;
+}
+body.auth-ready {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Geolocation, Map Picker & Autocomplete Dropdown */
+.geo-search-container {
+  position: relative;
+  width: 100%;
+}
+.geo-search-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+.geo-search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 1100;
+}
+.geo-search-item {
+  padding: 0.65rem 0.9rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.88rem;
+  transition: background 0.15s ease;
+  display: flex;
+  flex-direction: column;
+}
+.geo-search-item:last-child {
+  border-bottom: none;
+}
+.geo-search-item:hover,
+.geo-search-item:focus {
+  background: #f0fdf4;
+}
+.geo-search-item-primary {
+  font-weight: 600;
+  color: #0f172a;
+}
+.geo-search-item-secondary {
+  font-size: 0.76rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+.geo-search-empty {
+  padding: 0.75rem 0.9rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  text-align: center;
+  font-style: italic;
+}
+#farm-map {
+  width: 100%;
+  height: 230px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: #e2e8f0;
+  z-index: 1;
+}
+#farm-map .leaflet-pane {
+  z-index: 400;
+}
+#farm-map .leaflet-top,
+#farm-map .leaflet-bottom {
+  z-index: 500;
+}
+.profile-address-box {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.85rem;
+  animation: fadeIn 0.25s ease;
+}
+
 

@@ -155,14 +155,14 @@ def get_crop_recommendations(
                 crop_id=c_id,
                 crop_name=c_name,
                 season=r["season"],
-                suitability=float(r["suitability"]),
-                ph_score=float(r["ph_score"]),
-                temp_score=float(r["temp_score"]),
-                humidity_score=float(r["humidity_score"]),
-                rain_score=float(r["rain_score"]),
-                n_score=float(r["n_score"]),
-                p_score=float(r["p_score"]),
-                k_score=float(r["k_score"]),
+                suitability=round(float(r["suitability"]), 1),
+                ph_score=round(float(r["ph_score"]), 1),
+                temp_score=round(float(r["temp_score"]), 1),
+                humidity_score=round(float(r["humidity_score"]), 1),
+                rain_score=round(float(r["rain_score"]), 1),
+                n_score=round(float(r["n_score"]), 1),
+                p_score=round(float(r["p_score"]), 1),
+                k_score=round(float(r["k_score"]), 1),
                 prediction_id=p_id,
             )
         )
@@ -234,7 +234,7 @@ def get_prediction_history(
                         crop_id=item["crop_id"],
                         crop_name=item["crop_name"],
                         season=item["season"],
-                        suitability_score=float(item["suitability_score"]),
+                        suitability_score=round(float(item["suitability_score"]), 1),
                     )
                     for item in items
                 ],

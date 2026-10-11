@@ -4,70 +4,172 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - AgriPredict</title>
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/css/theme.css">
+  <style>
+    .auth-split-wrapper {
+      min-height: 100vh;
+      display: flex;
+      width: 100%;
+    }
+    .auth-hero-side {
+      display: none;
+    }
+    @media (min-width: 900px) {
+      .auth-hero-side {
+        flex: 1.1;
+        background: linear-gradient(145deg, #1A4D2E 0%, #2F7D4F 60%, #173822 100%);
+        color: #FFFFFF;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 3.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+    }
+    .auth-form-side {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+      background-color: var(--bg);
+    }
+    .auth-card-clean {
+      width: 100%;
+      max-width: 440px;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 2.25rem 2rem;
+      box-shadow: var(--shadow-md);
+    }
+  </style>
 </head>
 <body>
-  <div class="auth-wrapper">
-    <div class="auth-card">
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
-        <div class="lang-switch">
-          <button type="button" class="lang-btn active" data-lang="en" onclick="UI.switchLanguage('en')">EN</button>
-          <button type="button" class="lang-btn" data-lang="mr" onclick="UI.switchLanguage('mr')">MR</button>
-          <button type="button" class="lang-btn" data-lang="hi" onclick="UI.switchLanguage('hi')">HI</button>
+  <div class="auth-split-wrapper">
+    <!-- Desktop Hero Illustration Side -->
+    <div class="auth-hero-side">
+      <div>
+        <div style="display:flex; align-items:center; gap:0.6rem; font-size:1.6rem; font-weight:800; letter-spacing:-0.5px;">
+          <span>🌱</span> <span>AgriPredict</span>
+        </div>
+        <div style="font-size:0.9rem; opacity:0.85; margin-top:0.25rem;">
+          Smart Farming & Agronomic Decision Support
         </div>
       </div>
 
-      <div class="auth-header">
-        <div style="font-size: 2.4rem; margin-bottom: 0.25rem;">🌱</div>
-        <h1 class="auth-title">AgriPredict</h1>
-        <p class="auth-subtitle" data-i18n="login">Sign in to your farmer account</p>
+      <div style="margin: 3rem 0;">
+        <div style="font-size: 2.75rem; margin-bottom: 1.25rem;">🌾 🚜 📈</div>
+        <h2 style="font-size: 2rem; font-weight: 800; color: #FFFFFF; line-height: 1.25; margin-bottom: 1rem;">
+          Predict, Protect & Grow Higher Yields.
+        </h2>
+        <p style="font-size: 1.05rem; opacity: 0.9; line-height: 1.6; max-width: 460px;">
+          Tailored crop recommendations based on soil test chemistry, automated weather alerts, and localized mandi market prices.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 2rem;">
+          <div style="display:flex; align-items:center; gap:0.65rem; font-size:0.95rem;">
+            <span style="background:rgba(255,255,255,0.2); width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">✓</span>
+            <span>Soil nutrient deficit & fertilizer dosage calculation</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.65rem; font-size:0.95rem;">
+            <span style="background:rgba(255,255,255,0.2); width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">✓</span>
+            <span>Trigger-based weather hazard warnings</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.65rem; font-size:0.95rem;">
+            <span style="background:rgba(255,255,255,0.2); width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">✓</span>
+            <span>Multilingual support in Marathi, Hindi & English</span>
+          </div>
+        </div>
       </div>
 
-      <div id="alert-container"></div>
+      <div style="font-size: 0.82rem; opacity: 0.7;">
+        &copy; AgriPredict • Farmer-First Open Agricultural Platform
+      </div>
+    </div>
 
-      <form id="login-form">
-        <div class="form-group">
-          <label class="form-label" for="identifier">Phone Number or Email</label>
-          <input
-            type="text"
-            id="identifier"
-            class="form-control"
-            placeholder="e.g. 9876543210 or farmer@agri.in"
-            required
-            autocomplete="username"
-          >
+    <!-- Form Side (Mobile single-column, desktop right split) -->
+    <div class="auth-form-side">
+      <div class="auth-card-clean">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <div style="display:flex; align-items:center; gap:0.4rem; font-weight:700; color:var(--primary); font-size:1.15rem;">
+            <span>🌱</span> <span>AgriPredict</span>
+          </div>
+          <div class="lang-switch">
+            <button type="button" class="lang-btn active" data-lang="en" onclick="UI.switchLanguage('en')">EN</button>
+            <button type="button" class="lang-btn" data-lang="mr" onclick="UI.switchLanguage('mr')">MR</button>
+            <button type="button" class="lang-btn" data-lang="hi" onclick="UI.switchLanguage('hi')">HI</button>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            class="form-control"
-            placeholder="Enter your password"
-            required
-            autocomplete="current-password"
-          >
+        <div style="margin-bottom: 1.5rem;">
+          <h1 style="font-size: var(--text-2xl); font-weight: 800; color: var(--ink); margin-bottom: 0.25rem;">
+            <span data-i18n="login">Sign In</span>
+          </h1>
+          <p style="font-size: var(--text-sm); color: var(--muted);" data-i18n="login_sub">
+            Enter your mobile number or email to access your farm dashboard.
+          </p>
         </div>
 
-        <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block" style="margin-top: 1.25rem;">
-          <span data-i18n="login">Login</span>
-        </button>
-      </form>
+        <div id="alert-container"></div>
 
-      <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
-        Don't have an account? <a href="/ui/register" style="color: var(--primary); font-weight: 600;" data-i18n="register">Register</a>
+        <form id="login-form">
+          <div class="form-group">
+            <label class="form-label" for="identifier" data-i18n="phone_or_email">
+              Phone Number or Email
+            </label>
+            <input
+              type="text"
+              id="identifier"
+              class="form-control"
+              placeholder="e.g. 9876543210 or farmer@agri.in"
+              data-i18n-placeholder="placeholder_phone_or_email"
+              required
+              autocomplete="username"
+            >
+            <span class="form-hint">Registered 10-digit mobile number or email address</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password" data-i18n="password">
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              class="form-control"
+              placeholder="Enter your password"
+              data-i18n-placeholder="placeholder_password"
+              required
+              autocomplete="current-password"
+            >
+          </div>
+
+          <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem;">
+            <span data-i18n="login">Login</span>
+          </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.5rem; font-size: var(--text-sm); color: var(--muted);">
+          <span data-i18n="dont_have_account">Don't have an account?</span>
+          <a href="/ui/register" style="color: var(--primary); font-weight: 700; margin-left: 0.25rem;" data-i18n="register">Register</a>
+        </div>
       </div>
     </div>
   </div>
 
   <script src="/static/js/api.js"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // If already logged in, redirect to dashboard
-      if (API.getToken()) {
-        window.location.href = "/ui/dashboard";
-        return;
+    function initLogin() {
+      const nextParam = new URLSearchParams(window.location.search).get("next");
+      if (nextParam) {
+        API.clearSession();
+        const regLink = document.querySelector('a[href="/ui/register"]');
+        if (regLink) regLink.href = `/ui/register?next=${encodeURIComponent(nextParam)}`;
       }
 
       UI.applyTranslations();
@@ -93,7 +195,7 @@
           if (farmerObj && farmerObj.language) {
             API.setLang(farmerObj.language);
           }
-          window.location.href = "/ui/dashboard";
+          window.location.href = UI.getSafeRedirectUrl("/ui/dashboard");
         } catch (err) {
           UI.showAlert("alert-container", err.message || "Invalid credentials. Please try again.");
         } finally {
@@ -102,7 +204,13 @@
           UI.applyTranslations();
         }
       });
-    });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initLogin);
+    } else {
+      initLogin();
+    }
   </script>
 </body>
 </html>

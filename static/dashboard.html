@@ -4,47 +4,82 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - AgriPredict</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/theme.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
+<body class="auth-protected">
   <div id="navbar-placeholder"></div>
 
   <div class="container">
     <div id="alert-container"></div>
 
+    <!-- Live Weather & Condition Banner -->
+    <div class="weather-strip" id="dashboard-weather-banner" style="margin-bottom: 1.5rem; display: none;">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span style="font-size:2rem;" id="dash-weather-icon">⛅</span>
+        <div>
+          <div style="font-weight:700; font-size:1.05rem; color:var(--ink);" id="dash-weather-farm">Farm Weather</div>
+          <div style="font-size:0.8rem; color:var(--muted);" id="dash-weather-condition">Condition: Clear</div>
+        </div>
+      </div>
+      <div class="weather-metric-group">
+        <div class="weather-metric">🌡️ <strong id="dash-weather-temp">—</strong></div>
+        <div class="weather-metric">💧 <strong id="dash-weather-humidity">—</strong></div>
+        <div class="weather-metric">🌧️ <strong id="dash-weather-rain">—</strong></div>
+      </div>
+    </div>
+
+    <!-- Recommended Next Step Card -->
+    <div class="next-action-card" id="dashboard-next-action-card">
+      <div class="next-action-content">
+        <div class="next-action-icon" id="next-action-icon">🌱</div>
+        <div>
+          <div style="font-size:0.75rem; font-weight:700; color:var(--accent-gold); text-transform:uppercase;" data-i18n="recommended_next_step">Recommended Next Step</div>
+          <h3 style="font-size:1.15rem; font-weight:700; color:var(--ink); margin:0.15rem 0;" id="next-action-title">Get Crop Recommendations</h3>
+          <p style="font-size:0.875rem; color:var(--muted); margin:0;" id="next-action-desc">Add a farm plot and record soil chemistry to generate tailored crop suggestions.</p>
+        </div>
+      </div>
+      <div id="next-action-btn-wrap">
+        <a href="/ui/farms" class="btn btn-primary btn-sm" id="next-action-btn">+ Add Farm Plot</a>
+      </div>
+    </div>
+
     <!-- Summary KPI Cards -->
     <div class="section-header">
       <div>
-        <h2 class="section-title">📊 Farming Overview</h2>
-        <p class="section-subtitle">Real-time aggregate analytics from your farm records</p>
+        <h2 class="section-title">📊 <span data-i18n="farming_overview">Farming Overview</span></h2>
+        <p class="section-subtitle" data-i18n="farming_overview_sub">Real-time aggregate analytics from your farm records</p>
       </div>
     </div>
 
     <div class="kpi-grid">
       <div class="kpi-card">
-        <span class="kpi-label">Total Farms</span>
-        <span class="kpi-value" id="kpi-farms">0</span>
+        <span class="kpi-label" data-i18n="total_farms">Total Farms</span>
+        <span class="kpi-value" id="kpi-farms">—</span>
       </div>
       <div class="kpi-card">
-        <span class="kpi-label">Active Cycles</span>
-        <span class="kpi-value" id="kpi-active">0</span>
+        <span class="kpi-label" data-i18n="active_cycles">Active Cycles</span>
+        <span class="kpi-value" id="kpi-active">—</span>
       </div>
       <div class="kpi-card">
-        <span class="kpi-label">Completed Cycles</span>
-        <span class="kpi-value" id="kpi-completed">0</span>
+        <span class="kpi-label" data-i18n="completed_cycles">Completed Cycles</span>
+        <span class="kpi-value" id="kpi-completed">—</span>
       </div>
       <div class="kpi-card kpi-revenue">
-        <span class="kpi-label">Total Revenue</span>
-        <span class="kpi-value" id="kpi-revenue">₹0.00</span>
+        <span class="kpi-label" data-i18n="total_revenue">Total Revenue</span>
+        <span class="kpi-value" id="kpi-revenue">—</span>
       </div>
       <div class="kpi-card kpi-expense">
-        <span class="kpi-label">Total Expenses</span>
-        <span class="kpi-value" id="kpi-expenses">₹0.00</span>
+        <span class="kpi-label" data-i18n="total_expenses">Total Expenses</span>
+        <span class="kpi-value" id="kpi-expenses">—</span>
       </div>
       <div class="kpi-card kpi-profit">
-        <span class="kpi-label">Net Profit</span>
-        <span class="kpi-value" id="kpi-profit">₹0.00</span>
+        <span class="kpi-label" data-i18n="net_profit">Net Profit</span>
+        <span class="kpi-value" id="kpi-profit">—</span>
       </div>
     </div>
 
@@ -52,8 +87,8 @@
     <div class="charts-grid">
       <div class="chart-card">
         <div class="chart-title">
-          <span>📈 Profit per Completed Cycle (₹)</span>
-          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">Harvested/Failed crops</span>
+          <span>📈 <span data-i18n="profit_per_cycle">Profit per Completed Cycle (₹)</span></span>
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;" data-i18n="harvested">Harvested/Failed crops</span>
         </div>
         <div class="chart-wrapper">
           <canvas id="profitBarChart"></canvas>
@@ -62,8 +97,8 @@
 
       <div class="chart-card">
         <div class="chart-title">
-          <span>🥧 Expenses by Category</span>
-          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">Cycle expenditures</span>
+          <span>🥧 <span data-i18n="expenses_by_cat">Expenses by Category</span></span>
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;" data-i18n="expenses">Cycle expenditures</span>
         </div>
         <div class="chart-wrapper">
           <canvas id="expensesPieChart"></canvas>
@@ -77,18 +112,18 @@
         <h2 class="section-title">
           <span>🌱</span> <span data-i18n="current_status">Current Status</span>
         </h2>
-        <p class="section-subtitle">Real-time stage tracking and progress of your active crop cycles</p>
+        <p class="section-subtitle" data-i18n="current_status_sub">Real-time stage tracking and progress of your active crop cycles</p>
       </div>
-      <a href="/ui/farms" class="btn btn-primary btn-sm">
-        <span>+ Start New Cycle</span>
-      </a>
+      <button type="button" class="btn btn-primary btn-sm" onclick="UI.openStartCycleModal()">
+        <span>+ <span data-i18n="start_new_cycle">Start New Cycle</span></span>
+      </button>
     </div>
 
     <div id="current-cycles-container" class="cycles-grid">
       <!-- Active cycle cards will be dynamically injected here -->
       <div class="empty-state" style="grid-column: 1 / -1;">
         <div class="empty-state-icon">⏳</div>
-        <p>Loading active crop cycles...</p>
+        <p data-i18n="loading_active_cycles">Loading active crop cycles...</p>
       </div>
     </div>
 
@@ -98,40 +133,41 @@
         <h2 class="section-title">
           <span>📜</span> <span data-i18n="history">Harvest History</span>
         </h2>
-        <p class="section-subtitle">Financial performance and harvest records of past completed crops</p>
+        <p class="section-subtitle" data-i18n="harvest_history_sub">Historical yield, revenue, expenses and profit from past cycles</p>
       </div>
     </div>
 
     <div class="table-card">
       <div class="table-toolbar">
         <select id="filter-farm" class="form-control" style="max-width: 220px;">
-          <option value="">All Farms</option>
+          <option value="" data-i18n="all_farms">All Farms</option>
         </select>
         <input
           type="text"
           id="filter-crop"
           class="form-control"
           placeholder="Search crop name..."
+          data-i18n-placeholder="filter_by_crop"
           style="max-width: 220px;"
         >
-        <button type="button" id="filter-btn" class="btn btn-secondary btn-sm">Filter</button>
-        <button type="button" id="reset-filter-btn" class="btn btn-secondary btn-sm">Reset</button>
+        <button type="button" id="filter-btn" class="btn btn-secondary btn-sm" data-i18n="search">Filter</button>
+        <button type="button" id="reset-filter-btn" class="btn btn-secondary btn-sm" data-i18n="cancel">Reset</button>
       </div>
 
       <div class="table-wrapper">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Farm</th>
-              <th>Crop</th>
-              <th>Status</th>
-              <th>Sowing Date</th>
-              <th>Harvest Date</th>
-              <th>Yield (kg)</th>
-              <th>Price/Qtl</th>
-              <th>Revenue</th>
-              <th>Expenses</th>
-              <th>Profit</th>
+              <th data-i18n="farm_name">Farm</th>
+              <th data-i18n="recommend_crop">Crop</th>
+              <th data-i18n="status">Status</th>
+              <th data-i18n="sowing_date">Sowing Date</th>
+              <th data-i18n="expected_harvest">Harvest Date</th>
+              <th data-i18n="yield_kg">Yield (kg)</th>
+              <th data-i18n="price_per_quintal">Price/Qtl</th>
+              <th data-i18n="revenue">Revenue</th>
+              <th data-i18n="expenses">Expenses</th>
+              <th data-i18n="profit">Profit</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -162,14 +198,20 @@
     let currentOffset = 0;
     const PAGE_LIMIT = 10;
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      if (!UI.requireAuth()) return;
+    async function initDashboard() {
+      if (!(await UI.requireAuth())) return;
       UI.renderNavbar("dashboard");
 
       await loadDashboardData();
       await loadExpenseCategoryChart();
       await populateFarmFilter();
       await loadHistory();
+
+      // Refresh data when a cycle is started from modal
+      window.addEventListener("agri_cycle_started", async () => {
+        await loadDashboardData();
+        await loadExpenseCategoryChart();
+      });
 
       // Bind filter buttons
       document.getElementById("filter-btn").addEventListener("click", () => {
@@ -201,20 +243,49 @@
         await loadExpenseCategoryChart();
         await loadHistory();
       });
-    });
+
+      window.addEventListener("agri_theme_changed", async () => {
+        if (typeof Chart !== "undefined") {
+          const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+          const textColor = isDark ? "#9DB3A3" : "#5C6B5C";
+          const gridColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+          if (profitChartInstance) {
+            if (profitChartInstance.options.scales && profitChartInstance.options.scales.x) {
+              profitChartInstance.options.scales.x.ticks = profitChartInstance.options.scales.x.ticks || {};
+              profitChartInstance.options.scales.x.ticks.color = textColor;
+              profitChartInstance.options.scales.x.grid = profitChartInstance.options.scales.x.grid || {};
+              profitChartInstance.options.scales.x.grid.color = gridColor;
+            }
+            if (profitChartInstance.options.scales && profitChartInstance.options.scales.y) {
+              profitChartInstance.options.scales.y.ticks = profitChartInstance.options.scales.y.ticks || {};
+              profitChartInstance.options.scales.y.ticks.color = textColor;
+              profitChartInstance.options.scales.y.grid = profitChartInstance.options.scales.y.grid || {};
+              profitChartInstance.options.scales.y.grid.color = gridColor;
+            }
+            profitChartInstance.update();
+          }
+        }
+      });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initDashboard);
+    } else {
+      initDashboard();
+    }
 
     async function loadDashboardData() {
       try {
         // 1. Load Summary
         const summary = await API.getDashboardSummary();
-        document.getElementById("kpi-farms").textContent = summary.total_farms;
-        document.getElementById("kpi-active").textContent = summary.active_cycles;
-        document.getElementById("kpi-completed").textContent = summary.completed_cycles;
-        document.getElementById("kpi-revenue").textContent = UI.formatCurrency(summary.total_revenue);
-        document.getElementById("kpi-expenses").textContent = UI.formatCurrency(summary.total_expenses);
+        UI.animateCountUp("kpi-farms", summary.total_farms);
+        UI.animateCountUp("kpi-active", summary.active_cycles);
+        UI.animateCountUp("kpi-completed", summary.completed_cycles);
+        UI.animateCountUp("kpi-revenue", summary.total_revenue, 800, "₹");
+        UI.animateCountUp("kpi-expenses", summary.total_expenses, 800, "₹");
+        UI.animateCountUp("kpi-profit", summary.net_profit, 800, "₹");
 
         const profitEl = document.getElementById("kpi-profit");
-        profitEl.textContent = UI.formatCurrency(summary.net_profit);
         if (summary.net_profit >= 0) {
           profitEl.className = "kpi-value positive";
         } else {
@@ -225,6 +296,49 @@
         const activeCycles = await API.getCurrentStatus();
         renderCurrentCycles(activeCycles);
 
+        // 3. Update Next Best Action Card & Weather Banner
+        try {
+          const farms = await API.getFarms();
+          const nextActionTitle = document.getElementById("next-action-title");
+          const nextActionDesc = document.getElementById("next-action-desc");
+          const nextActionBtnWrap = document.getElementById("next-action-btn-wrap");
+          const nextActionIcon = document.getElementById("next-action-icon");
+
+          if (!farms || farms.length === 0) {
+            nextActionIcon.textContent = "🚜";
+            nextActionTitle.textContent = UI.t("add_first_farm_title", "Register Your First Farm Plot");
+            nextActionDesc.textContent = UI.t("add_first_farm_desc", "Add plot boundaries and soil type to unlock tailored AI crop recommendations.");
+            nextActionBtnWrap.innerHTML = `<a href="/ui/farms" class="btn btn-primary btn-sm">+ Add Farm Plot</a>`;
+          } else if (!activeCycles || activeCycles.length === 0) {
+            nextActionIcon.textContent = "🌱";
+            nextActionTitle.textContent = UI.t("start_cycle_title", "Start a New Crop Cycle");
+            nextActionDesc.textContent = UI.t("start_cycle_desc", "Track growth stages, nutrient schedules, and harvest timelines for your plots.");
+            nextActionBtnWrap.innerHTML = `<button type="button" class="btn btn-primary btn-sm" onclick="UI.openStartCycleModal()">+ Start Cycle</button>`;
+          } else {
+            const firstCycle = activeCycles[0];
+            nextActionIcon.textContent = "📋";
+            nextActionTitle.textContent = `${UI.translateCrop(firstCycle.crop_name)}: ${firstCycle.current_stage || 'Current Stage'}`;
+            nextActionDesc.textContent = firstCycle.current_task || "Review ongoing field operations and monitor soil moisture.";
+            nextActionBtnWrap.innerHTML = `<a href="/ui/cycle-detail?id=${firstCycle.cycle_id}" class="btn btn-primary btn-sm">Manage Cycle &rarr;</a>`;
+          }
+
+          // Fetch weather for first farm with coordinates
+          if (farms && farms.length > 0) {
+            const farmWithGps = farms.find(f => f.latitude !== null && f.longitude !== null) || farms[0];
+            try {
+              const weather = await API.getWeatherCurrent(farmWithGps.farm_id);
+              if (weather) {
+                const banner = document.getElementById("dashboard-weather-banner");
+                document.getElementById("dash-weather-farm").textContent = `${farmWithGps.farm_name} • Live Weather`;
+                document.getElementById("dash-weather-temp").textContent = `${weather.temperature || '—'}°C`;
+                document.getElementById("dash-weather-humidity").textContent = `${weather.humidity || '—'}%`;
+                document.getElementById("dash-weather-rain").textContent = `${weather.rainfall_mm || '0'} mm`;
+                banner.style.display = "flex";
+              }
+            } catch (we) {}
+          }
+        } catch (fe) {}
+
       } catch (err) {
         UI.showAlert("alert-container", "Error loading dashboard metrics: " + err.message);
       }
@@ -233,14 +347,15 @@
     function renderCurrentCycles(cycles) {
       const container = document.getElementById("current-cycles-container");
       if (!cycles || cycles.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state" style="grid-column: 1 / -1; background:#ffffff; border:1px dashed var(--border); border-radius:var(--radius-lg);">
-            <div class="empty-state-icon">🌾</div>
-            <h3 style="font-weight:700; color:#334155; margin-bottom:0.4rem;">No Active Crop Cycles</h3>
-            <p style="font-size:0.9rem; margin-bottom:1.25rem;">You don't have any ongoing crop cycles. Get recommendations and plant a crop on your farm.</p>
-            <a href="/ui/farms" class="btn btn-primary btn-sm">Go to My Farms & Plant Crop</a>
-          </div>
-        `;
+        container.innerHTML = UI.getEmptyState(
+          "🌾",
+          UI.t("no_active_cycles", "No Active Crop Cycles"),
+          UI.t("no_active_cycles_desc", "You don't have any ongoing crop cycles. Start a cycle directly or visit your farms to get crop recommendations."),
+          `<div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="UI.openStartCycleModal()">+ Start New Cycle</button>
+            <a href="/ui/farms" class="btn btn-secondary btn-sm">Go to My Farms</a>
+          </div>`
+        );
         return;
       }
 
@@ -248,62 +363,66 @@
         const badgeClass = c.status === "Growing" ? "badge-growing" : "badge-planned";
         const progress = Math.min(100, Math.max(0, c.progress_pct || 0));
 
-        let daysText = "";
+        let daysToHarvestText = "";
         if (c.days_to_harvest !== null && c.days_to_harvest !== undefined) {
-          daysText = c.days_to_harvest >= 0
+          daysToHarvestText = c.days_to_harvest >= 0
             ? `${c.days_to_harvest} days remaining`
             : `${Math.abs(c.days_to_harvest)} days overdue`;
         } else {
-          daysText = "Harvest date pending";
+          daysToHarvestText = "Pending";
         }
 
         return `
-          <div class="cycle-card">
+          <div class="card card-interactive" style="display:flex; flex-direction:column; justify-content:space-between; padding:1.25rem;">
             <div>
-              <div class="cycle-card-top">
+              <div class="card-header" style="margin-bottom:0.75rem;">
                 <div>
-                  <h3 class="cycle-crop-name">${UI.translateCrop(c.crop_name)}</h3>
-                  <div class="cycle-farm-name">📍 ${c.farm_name}</div>
+                  <h3 style="font-size:1.2rem; font-weight:700; color:var(--ink); margin:0;">${UI.translateCrop(c.crop_name)}</h3>
+                  <div style="font-size:0.82rem; color:var(--muted); margin-top:2px;">📍 ${c.farm_name}</div>
                 </div>
                 <span class="badge ${badgeClass}">${UI.translateStatus(c.status)}</span>
               </div>
 
-              <div class="progress-container">
-                <div class="progress-header">
-                  <span>Cycle Progress</span>
-                  <span>${progress.toFixed(1)}%</span>
-                </div>
-                <div class="progress-bar-bg">
-                  <div class="progress-bar-fill" style="width: ${progress}%;"></div>
+              <!-- Progress Circular Gauge & Bar -->
+              <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem; background:var(--surface-alt); padding:0.75rem; border-radius:var(--radius-md);">
+                ${UI.renderCircularProgress(progress, 54, 5)}
+                <div style="flex:1;">
+                  <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:0.25rem;">
+                    <span>Cycle Progress</span>
+                    <span>${progress.toFixed(1)}%</span>
+                  </div>
+                  <div class="bar-track">
+                    <div class="bar-fill" style="width: ${progress}%;"></div>
+                  </div>
                 </div>
               </div>
 
-              <div class="cycle-stage-box">
-                <div class="stage-title">Stage: ${c.current_stage || 'Active'}</div>
-                <div class="stage-task">Task: ${c.current_task || 'Monitor crop health and moisture.'}</div>
+              <div style="background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--radius-sm); padding:0.6rem 0.75rem; margin-bottom:0.85rem;">
+                <div style="font-weight:700; font-size:0.85rem; color:var(--ink);">Stage: ${c.current_stage || 'Active'}</div>
+                <div style="font-size:0.8rem; color:var(--muted); margin-top:2px;">Task: ${c.current_task || 'Monitor crop health and moisture.'}</div>
               </div>
 
-              <div class="cycle-metrics">
-                <div class="cycle-metric-item">
-                  <span class="label">Sown:</span>
-                  <span class="val">${UI.formatDate(c.sowing_date)}</span>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.82rem;">
+                <div>
+                  <span style="color:var(--muted); font-size:0.72rem; display:block;">Sown Date</span>
+                  <span style="font-weight:600; color:var(--ink);">${UI.formatDate(c.sowing_date)}</span>
                 </div>
-                <div class="cycle-metric-item">
-                  <span class="label">Harvest:</span>
-                  <span class="val">${daysText}</span>
+                <div>
+                  <span style="color:var(--muted); font-size:0.72rem; display:block;">Harvest Window</span>
+                  <span style="font-weight:600; color:var(--ink);">${UI.formatDate(c.expected_harvest)}</span>
                 </div>
-                <div class="cycle-metric-item">
-                  <span class="label">Days Active:</span>
-                  <span class="val">${c.days_since_sowing !== null ? c.days_since_sowing + ' days' : 'Not sown'}</span>
+                <div>
+                  <span style="color:var(--muted); font-size:0.72rem; display:block;">Timeline Status</span>
+                  <span style="font-weight:700; color:var(--primary);">${daysToHarvestText}</span>
                 </div>
-                <div class="cycle-metric-item">
-                  <span class="label">Expenses:</span>
-                  <span class="val" style="color:var(--accent); font-weight:700;">${UI.formatCurrency(c.expenses_so_far)}</span>
+                <div>
+                  <span style="color:var(--muted); font-size:0.72rem; display:block;">Expenses So Far</span>
+                  <span style="font-weight:700; color:var(--accent-gold);">${UI.formatCurrency(c.expenses_so_far)}</span>
                 </div>
               </div>
             </div>
 
-            <div style="margin-top:0.75rem;">
+            <div style="margin-top:1rem; border-top:1px solid var(--border); padding-top:0.75rem;">
               <a href="/ui/cycle-detail?id=${c.cycle_id}" class="btn btn-secondary btn-sm btn-block">
                 ⚙️ Manage Cycle & Expenses
               </a>
@@ -434,9 +553,6 @@
               }
             }
           }
-        });
-      }
-
         });
       }
     }

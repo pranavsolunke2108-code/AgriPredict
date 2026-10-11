@@ -4,12 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mandi Market Prices & Price Trends - AgriPredict</title>
-  <link rel="stylesheet" href="/static/css/index.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/theme.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .trend-header-card {
-      background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%);
-      color: white;
+      background: linear-gradient(135deg, #1A4D2E 0%, #2F7D4F 100%);
+      color: #FFFFFF;
       border-radius: var(--radius-lg);
       padding: 1.75rem 2rem;
       margin-bottom: 2rem;
@@ -27,8 +31,8 @@
       pointer-events: none;
     }
     .filter-panel {
-      background: white;
-      border: 1px solid #e2e8f0;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius-md);
       padding: 1.25rem 1.5rem;
       margin-bottom: 1.5rem;
@@ -48,13 +52,13 @@
     .filter-item label {
       font-size: 0.78rem;
       font-weight: 700;
-      color: #475569;
+      color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     .chart-container-card {
-      background: white;
-      border: 1px solid #e2e8f0;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius-md);
       padding: 1.5rem;
       margin-bottom: 2rem;
@@ -99,9 +103,9 @@
       border-radius: 9999px;
       font-size: 0.75rem;
     }
-  </style>
+</style>
 </head>
-<body>
+<body class="auth-protected">
   <div id="navbar-placeholder"></div>
 
   <div class="container" style="padding-top: 1.5rem; padding-bottom: 3rem;">
@@ -212,14 +216,20 @@
       "Amravati", "Nanded", "Jalgaon", "Ahmednagar", "Satara", "Sangli"
     ];
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      if (!UI.requireAuth()) return;
+    async function initPrices() {
+      if (!(await UI.requireAuth())) return;
       UI.renderNavbar("prices");
 
       populateDistricts();
       await populateCrops();
       await loadAllPriceData();
-    });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initPrices);
+    } else {
+      initPrices();
+    }
 
     function populateDistricts() {
       const select = document.getElementById("district-select");

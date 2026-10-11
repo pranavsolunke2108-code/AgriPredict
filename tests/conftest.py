@@ -40,6 +40,10 @@ class SQLiteTestCursor:
             return self
 
         # 2. Handle Stored Procedure calls
+        if re.match(r'^\s*CALL\s+quick_recommend', query, flags=re.IGNORECASE):
+            self._handle_quick_recommend(params)
+            return self
+
         if re.match(r'^\s*CALL\s+recommend_crops', query, flags=re.IGNORECASE):
             self._handle_recommend_crops(params)
             return self
@@ -207,6 +211,126 @@ class SQLiteTestCursor:
                     self.conn.commit()
 
         return res
+
+    def _handle_quick_recommend(self, params: Any):
+        """Emulate the MySQL quick_recommend stored procedure logic for SQLite tests."""
+        ph, n, p, k, temp, humidity, rain_30d_mm, season = (
+            float(params[0]),
+            float(params[1]),
+            float(params[2]),
+            float(params[3]),
+            float(params[4]),
+            float(params[5]),
+            float(params[6]),
+            params[7],
+        )
+
+        if ph < 0.0 or ph > 14.0:
+            raise DatabaseProcedureError("pH must be between 0 and 14", sqlstate="45000")
+        if n < 0 or p < 0 or k < 0:
+            raise DatabaseProcedureError("Nutrient values (N, P, K) cannot be negative", sqlstate="45000")
+        if temp < -10.0 or temp > 60.0:
+            raise DatabaseProcedureError("Temperature out of valid range (-10 to 60)", sqlstate="45000")
+        if humidity < 0.0 or humidity > 100.0:
+            raise DatabaseProcedureError("Humidity must be between 0 and 100", sqlstate="45000")
+        if rain_30d_mm < 0.0:
+            raise DatabaseProcedureError("Rainfall cannot be negative", sqlstate="45000")
+
+        # Determine season
+        if not season or season == "auto":
+            month = date.today().month
+            if 6 <= month <= 10:
+                v_season = "Kharif"
+            elif month in (11, 12, 1, 2, 3):
+                v_season = "Rabi"
+            else:
+                v_season = "Zaid"
+        else:
+            v_season = season
+
+        if v_season == "ALL":
+            crops = self.raw_cursor.execute("SELECT * FROM crops").fetchall()
+        else:
+            crops = self.raw_cursor.execute(
+                "SELECT * FROM crops WHERE season = ? OR season = 'Annual'",
+                (v_season,),
+            ).fetchall()
+
+        scored = []
+        for c in crops:
+            c_dict = dict(c) if hasattr(c, "keys") else {
+                "crop_id": c[0], "crop_name": c[1], "season": c[2], "duration_days": c[3],
+                "min_ph": c[4], "max_ph": c[5], "min_temp": c[6], "max_temp": c[7],
+                "min_humidity": c[8], "max_humidity": c[9], "min_rainfall": c[10],
+                "max_rainfall": c[11], "n_required": c[12], "p_required": c[13], "k_required": c[14],
+            }
+
+            min_ph, max_ph = c_dict["min_ph"], c_dict["max_ph"]
+            if min_ph <= ph <= max_ph:
+                ph_score = 100.0
+            else:
+                dist = min(abs(ph - min_ph), abs(ph - max_ph))
+                ph_score = max(0.0, 100.0 - 100.0 * dist / max(max_ph - min_ph, 1.0))
+
+            min_t, max_t = c_dict["min_temp"], c_dict["max_temp"]
+            if min_t <= temp <= max_t:
+                temp_score = 100.0
+            else:
+                dist = min(abs(temp - min_t), abs(temp - max_t))
+                temp_score = max(0.0, 100.0 - 100.0 * dist / max(max_t - min_t, 1.0))
+
+            min_h, max_h = c_dict["min_humidity"], c_dict["max_humidity"]
+            if min_h <= humidity <= max_h:
+                hum_score = 100.0
+            else:
+                dist = min(abs(humidity - min_h), abs(humidity - max_h))
+                hum_score = max(0.0, 100.0 - 100.0 * dist / max(max_h - min_h, 1.0))
+
+            min_r, max_r = c_dict["min_rainfall"], c_dict["max_rainfall"]
+            if min_r <= rain_30d_mm <= max_r:
+                rain_score = 100.0
+            else:
+                dist = min(abs(rain_30d_mm - min_r), abs(rain_30d_mm - max_r))
+                rain_score = max(0.0, 100.0 - 100.0 * dist / max(max_r - min_r, 1.0))
+
+            n_req = c_dict["n_required"] or 1
+            n_score = (100.0 - 50.0 * (n - n_req) / n_req) if n >= n_req else (100.0 * n / n_req)
+            n_score = max(0.0, min(100.0, n_score))
+
+            p_req = c_dict["p_required"] or 1
+            p_score = (100.0 - 50.0 * (p - p_req) / p_req) if p >= p_req else (100.0 * p / p_req)
+            p_score = max(0.0, min(100.0, p_score))
+
+            k_req = c_dict["k_required"] or 1
+            k_score = (100.0 - 50.0 * (k - k_req) / k_req) if k >= k_req else (100.0 * k / k_req)
+            k_score = max(0.0, min(100.0, k_score))
+
+            total = round(
+                ph_score * 0.15 + temp_score * 0.20 + hum_score * 0.10 +
+                rain_score * 0.20 + n_score * 0.12 + p_score * 0.12 + k_score * 0.11,
+                2,
+            )
+
+            scored.append({
+                "crop_id": c_dict["crop_id"],
+                "crop_name": c_dict["crop_name"],
+                "season": c_dict["season"],
+                "suitability": total,
+                "ph_score": round(ph_score, 2),
+                "temp_score": round(temp_score, 2),
+                "humidity_score": round(hum_score, 2),
+                "rain_score": round(rain_score, 2),
+                "n_score": round(n_score, 2),
+                "p_score": round(p_score, 2),
+                "k_score": round(k_score, 2),
+            })
+
+        scored.sort(key=lambda x: (x["suitability"], x["crop_name"]), reverse=True)
+        top3 = scored[:3]
+        for i, item in enumerate(top3):
+            item["rank_no"] = i + 1
+
+        self._proc_results = top3
 
     def _handle_recommend_crops(self, params: Any):
         """Emulate the exact MySQL recommend_crops stored procedure logic for SQLite tests."""
@@ -900,14 +1024,15 @@ CREATE TABLE IF NOT EXISTS farmers (
 );
 
 CREATE TABLE IF NOT EXISTS farms (
-    farm_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    farmer_id    INTEGER NOT NULL,
-    farm_name    TEXT NOT NULL,
-    area_acres   REAL CHECK (area_acres > 0),
-    latitude     REAL,
-    longitude    REAL,
-    soil_type    TEXT,
-    irrigation   TEXT DEFAULT 'Rainfed',
+    farm_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    farmer_id      INTEGER NOT NULL,
+    farm_name      TEXT NOT NULL,
+    area_acres     REAL CHECK (area_acres > 0),
+    latitude       REAL,
+    longitude      REAL,
+    soil_type      TEXT,
+    irrigation     TEXT DEFAULT 'Rainfed',
+    location_label TEXT,
     FOREIGN KEY (farmer_id) REFERENCES farmers(farmer_id) ON DELETE CASCADE
 );
 
@@ -1346,13 +1471,102 @@ INSERT OR IGNORE INTO translations (text_key, lang, text) VALUES
 ('season_kharif', 'hi', 'खरीफ');
 
 INSERT OR IGNORE INTO crop_stages (stage_id, crop_id, stage_name, start_day, end_day, task) VALUES
-(1, 1, 'Vegetative', 0, 30, 'Apply Nitrogen & ensure adequate water standing'),
-(2, 1, 'Reproductive', 31, 75, 'Monitor for stem borer and maintain water'),
-(3, 1, 'Ripening', 76, 120, 'Drain excess water 10 days before harvest'),
-(4, 3, 'Crown Root Initiation (CRI)', 0, 25, 'First critical irrigation (20-25 DAS) and top-dress 1/3 Nitrogen'),
-(5, 3, 'Tillering & Jointing', 26, 60, 'Weed management and second top-dressing of Urea'),
-(6, 3, 'Heading & Flowering', 61, 90, 'Crucial irrigation during flowering stage; watch for rust'),
-(7, 3, 'Grain Filling & Maturity', 91, 120, 'Stop irrigation 10-15 days prior to harvesting');
+(1, 1, 'Nursery / Transplanting', 0, 25, 'Prepare nursery, transplant seedlings'),
+(2, 1, 'Tillering', 26, 55, 'First top-dressing of nitrogen, keep field flooded'),
+(3, 1, 'Panicle initiation', 56, 80, 'Second nitrogen dose, watch for stem borer'),
+(4, 1, 'Flowering', 81, 100, 'Maintain water level, avoid stress'),
+(5, 1, 'Grain filling and harvest', 101, 120, 'Drain field, harvest at maturity'),
+(11, 2, 'Germination', 0, 10, 'Light irrigation after sowing; fill gaps within 10 days'),
+(12, 2, 'Vegetative growth', 11, 40, 'Weed twice; apply first nitrogen top-dressing around day 25'),
+(13, 2, 'Tasseling and silking', 41, 65, 'Critical stage: irrigate and apply the second nitrogen dose'),
+(14, 2, 'Grain filling', 66, 90, 'Keep soil moist; scout for fall armyworm and stem borer'),
+(15, 2, 'Maturity and harvest', 91, 100, 'Harvest when husks dry and grains are hard'),
+(6, 3, 'Germination', 0, 20, 'Light irrigation after sowing'),
+(7, 3, 'Crown root initiation', 21, 40, 'First irrigation and nitrogen top-dressing'),
+(8, 3, 'Tillering', 41, 65, 'Weed control, second irrigation'),
+(9, 3, 'Flowering', 66, 90, 'Irrigate, monitor rust'),
+(10, 3, 'Grain filling and harvest', 91, 120, 'Final irrigation, harvest at maturity'),
+(16, 4, 'Germination', 0, 10, 'Treat seed; keep adequate soil moisture for even emergence'),
+(17, 4, 'Vegetative growth', 11, 35, 'Weed control and thinning; scout for leaf-eating pests'),
+(18, 4, 'Flowering', 36, 55, 'Avoid water stress; monitor pests and diseases'),
+(19, 4, 'Pod filling', 56, 85, 'Irrigate during dry spells; watch for pod borer'),
+(20, 4, 'Maturity and harvest', 86, 100, 'Harvest when leaves turn yellow and pods rattle'),
+(21, 5, 'Seedling', 0, 20, 'Gap filling and light irrigation; control early sucking pests'),
+(22, 5, 'Vegetative growth', 21, 60, 'Weed, thin to one plant per hill, first fertilizer top-dressing'),
+(23, 5, 'Squaring and flowering', 61, 100, 'Irrigate at square and flower stages; scout for bollworm'),
+(24, 5, 'Boll development', 101, 150, 'Second top-dressing; continue pest scouting'),
+(25, 5, 'Boll picking', 151, 180, 'Pick open bolls in 2-3 rounds; keep picked cotton dry and clean'),
+(26, 6, 'Germination', 0, 35, 'Plant setts, irrigate lightly, replant gaps'),
+(27, 6, 'Tillering', 36, 120, 'Weed, apply nitrogen in splits, earth up'),
+(28, 6, 'Grand growth', 121, 270, 'Regular irrigation, trash mulching, scout for borers'),
+(29, 6, 'Ripening', 271, 340, 'Reduce irrigation to raise sugar content'),
+(30, 6, 'Harvest', 341, 365, 'Cut close to the ground and deliver to the mill quickly'),
+(31, 7, 'Germination', 0, 10, 'Ensure moisture at sowing; avoid waterlogging'),
+(32, 7, 'Vegetative growth', 11, 40, 'Weed once or twice; one light irrigation if dry'),
+(33, 7, 'Flowering', 41, 65, 'Light irrigation; scout for pod borer'),
+(34, 7, 'Pod filling', 66, 90, 'Avoid water stress; control pod borer if above threshold'),
+(35, 7, 'Maturity and harvest', 91, 100, 'Harvest when plants dry and leaves drop'),
+(36, 8, 'Germination', 0, 15, 'Gap filling and light irrigation if dry'),
+(37, 8, 'Vegetative growth', 16, 70, 'Two weedings; follow local advice on pinching tips'),
+(38, 8, 'Flowering', 71, 110, 'Scout for pod borer and pod fly; spray only above threshold'),
+(39, 8, 'Pod development', 111, 140, 'Irrigate if dry; continue pest scouting'),
+(40, 8, 'Maturity and harvest', 141, 150, 'Harvest when most pods turn brown'),
+(41, 9, 'Germination', 0, 10, 'Use treated seed; keep soil moist'),
+(42, 9, 'Vegetative growth', 11, 35, 'Weed and earth up; watch for leaf miner'),
+(43, 9, 'Flowering and pegging', 36, 60, 'Apply gypsum; keep soil loose and moist for pegs'),
+(44, 9, 'Pod development', 61, 95, 'Irrigate; avoid water stress; watch for leaf spot'),
+(45, 9, 'Maturity and harvest', 96, 110, 'Harvest when leaves yellow and pods are mature'),
+(46, 10, 'Germination', 0, 10, 'Thin to one healthy plant per hill; light irrigation if dry'),
+(47, 10, 'Vegetative growth', 11, 40, 'Weed and apply nitrogen top-dressing'),
+(48, 10, 'Flowering', 41, 70, 'Irrigate if dry; scout for stem borer and midge'),
+(49, 10, 'Grain filling', 71, 100, 'Protect ear heads from birds'),
+(50, 10, 'Maturity and harvest', 101, 110, 'Harvest when grains are hard and ear heads are dry'),
+(51, 11, 'Germination', 0, 8, 'Thin and fill gaps within 10 days'),
+(52, 11, 'Tillering', 9, 30, 'Weed and apply nitrogen top-dressing'),
+(53, 11, 'Flowering', 31, 55, 'Irrigate if dry; watch for downy mildew'),
+(54, 11, 'Grain filling', 56, 75, 'Protect ear heads from birds'),
+(55, 11, 'Maturity and harvest', 76, 85, 'Harvest when grains are hard'),
+(56, 12, 'Establishment', 0, 20, 'Light, frequent irrigation; fill gaps'),
+(57, 12, 'Vegetative growth', 21, 60, 'Weed and apply nitrogen top-dressing; scout for thrips'),
+(58, 12, 'Bulb development', 61, 100, 'Regular irrigation; stop nitrogen; watch for purple blotch'),
+(59, 12, 'Maturity and harvest', 101, 120, 'Stop irrigation 10 days before harvest; harvest when tops fall; cure in shade'),
+(60, 13, 'Establishment', 0, 15, 'Transplant and irrigate lightly; replace dead seedlings'),
+(61, 13, 'Vegetative growth', 16, 40, 'Stake plants, weed, apply nitrogen top-dressing'),
+(62, 13, 'Flowering', 41, 60, 'Irrigate regularly; watch for blight and fruit borer'),
+(63, 13, 'Fruiting and picking', 61, 110, 'Pick at breaker stage every 3-4 days; keep irrigation even'),
+(64, 14, 'Germination', 0, 7, 'Ensure moisture for even emergence'),
+(65, 14, 'Vegetative growth', 8, 25, 'Weed once; avoid waterlogging'),
+(66, 14, 'Flowering', 26, 40, 'Light irrigation if dry; watch for yellow mosaic virus and whitefly'),
+(67, 14, 'Pod filling', 41, 55, 'Avoid water stress'),
+(68, 14, 'Maturity and harvest', 56, 65, 'Pick mature pods in 2-3 pickings'),
+(69, 15, 'Germination', 0, 8, 'Ensure moisture for even emergence'),
+(70, 15, 'Vegetative growth', 9, 30, 'Weed once; avoid waterlogging'),
+(71, 15, 'Flowering', 31, 50, 'Watch for yellow mosaic virus and whitefly'),
+(72, 15, 'Pod filling', 51, 70, 'Light irrigation if dry'),
+(73, 15, 'Maturity and harvest', 71, 80, 'Harvest when most pods turn black'),
+(74, 16, 'Germination', 0, 12, 'Ensure seedbed moisture'),
+(75, 16, 'Vegetative growth', 13, 50, 'Weed once; one light irrigation if dry'),
+(76, 16, 'Flowering', 51, 75, 'Avoid excess water; watch for aphids and rust'),
+(77, 16, 'Pod filling', 76, 100, 'Avoid water stress'),
+(78, 16, 'Maturity and harvest', 101, 110, 'Harvest when pods turn brown; thresh after drying'),
+(79, 17, 'Establishment', 0, 60, 'Plant healthy suckers or tissue-culture plants; irrigate regularly'),
+(80, 17, 'Vegetative growth', 61, 180, 'Fertilize every 1-2 months; remove extra suckers; support plants'),
+(81, 17, 'Flowering', 181, 240, 'Remove the male bud after fruit set; cover bunches'),
+(82, 17, 'Bunch development', 241, 290, 'Irrigate and prop; scout for pests'),
+(83, 17, 'Harvest', 291, 300, 'Harvest when fingers are plump and ridges are rounded'),
+(84, 18, 'Bud break', 0, 15, 'After pruning, apply bud-break treatment as locally advised; irrigate'),
+(85, 18, 'Shoot growth', 16, 50, 'Thin shoots and train vines; watch for downy mildew'),
+(86, 18, 'Flowering and fruit set', 51, 75, 'Avoid overhead irrigation; follow local fruit-set practices'),
+(87, 18, 'Berry development', 76, 120, 'Regular irrigation; disease scouting; balanced potash'),
+(88, 18, 'Ripening and harvest', 121, 150, 'Reduce irrigation; harvest at the target sugar level'),
+(89, 19, 'Germination', 0, 10, 'Keep seedbed moist; fill gaps'),
+(90, 19, 'Vine growth', 11, 35, 'Weed, mulch and apply fertilizer top-dressing'),
+(91, 19, 'Flowering and fruit set', 36, 55, 'Protect pollinators; avoid heavy spraying; irrigate regularly'),
+(92, 19, 'Fruit development', 56, 80, 'Steady irrigation; reduce water near maturity'),
+(93, 19, 'Maturity and harvest', 81, 90, 'Harvest when the tendril near the fruit dries and the ground spot turns yellow'),
+(94, 20, 'Flowering and fruit set', 0, 30, 'Avoid sprays at full bloom; watch for hoppers and powdery mildew'),
+(95, 20, 'Fruit growth', 31, 100, 'Light irrigation; protect against fruit fly; thin heavy fruit set'),
+(96, 20, 'Maturity and harvest', 101, 150, 'Harvest at maturity with the stalk; handle gently');
 
 INSERT OR IGNORE INTO fertilizers (fert_id, name, n_pct, p_pct, k_pct, price_per_kg) VALUES
 (1, 'Urea', 46.00, 0.00, 0.00, 6.00),
@@ -1373,6 +1587,28 @@ def sqlite_test_db():
     """Create a persistent in-memory SQLite database with full schema and seed data."""
     conn = sqlite3.connect(":memory:", check_same_thread=False)
     conn.row_factory = sqlite3.Row
+
+    def sqlite_get_season(check_date_val=None):
+        if not check_date_val:
+            m = date.today().month
+        else:
+            if isinstance(check_date_val, (date, datetime)):
+                m = check_date_val.month
+            else:
+                try:
+                    m = int(str(check_date_val).split("-")[1])
+                except Exception:
+                    m = date.today().month
+        if 6 <= m <= 10:
+            return "Kharif"
+        elif m in (11, 12, 1, 2, 3):
+            return "Rabi"
+        else:
+            return "Zaid"
+
+    conn.create_function("get_season", 0, lambda: sqlite_get_season())
+    conn.create_function("get_season", 1, sqlite_get_season)
+
     conn.executescript(SCHEMA_SQL)
     conn.executescript(CROPS_SEED_SQL)
     conn.commit()

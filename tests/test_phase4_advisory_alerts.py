@@ -237,16 +237,20 @@ def test_crop_calendar_timeline_and_ownership(client: TestClient):
     stages = cal_resp.json()
     assert len(stages) >= 4
 
-    cri_stage = next((s for s in stages if s["stage_name"] == "Crown Root Initiation (CRI)"), None)
+    germination = next((s for s in stages if "germination" in s["stage_name"].lower()), None)
+    assert germination is not None
+    assert germination["stage_status"] == "Done"
+
+    cri_stage = next((s for s in stages if "crown root" in s["stage_name"].lower()), None)
     assert cri_stage is not None
-    assert cri_stage["stage_status"] == "Done"
+    assert cri_stage["stage_status"] == "Current"
     assert "irrigation" in cri_stage["task"].lower()
 
-    tillering = next((s for s in stages if s["stage_name"] == "Tillering & Jointing"), None)
+    tillering = next((s for s in stages if "tillering" in s["stage_name"].lower()), None)
     assert tillering is not None
-    assert tillering["stage_status"] == "Current"
+    assert tillering["stage_status"] == "Upcoming"
 
-    grain_fill = next((s for s in stages if s["stage_name"] == "Grain Filling & Maturity"), None)
+    grain_fill = next((s for s in stages if "grain filling" in s["stage_name"].lower()), None)
     assert grain_fill is not None
     assert grain_fill["stage_status"] == "Upcoming"
 

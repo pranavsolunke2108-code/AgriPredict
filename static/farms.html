@@ -4,9 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Farms - AgriPredict</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
 </head>
-<body>
+<body class="auth-protected">
   <div id="navbar-placeholder"></div>
 
   <div class="container">
@@ -17,10 +21,10 @@
         <h2 class="section-title">
           <span>🚜</span> <span data-i18n="my_farms">My Farms</span>
         </h2>
-        <p class="section-subtitle">Manage your plots, soil chemistry, weather caching, and AI crop recommendations</p>
+        <p class="section-subtitle" data-i18n="my_farms_sub">Manage your plots, soil chemistry, weather caching, and AI crop recommendations</p>
       </div>
       <button type="button" class="btn btn-primary" onclick="openAddFarmModal()">
-        <span>+ Add Farm</span>
+        <span>+ <span data-i18n="add_farm">Add Farm</span></span>
       </button>
     </div>
 
@@ -28,14 +32,14 @@
     <div id="farms-container" class="cycles-grid">
       <div class="empty-state" style="grid-column: 1 / -1;">
         <div class="empty-state-icon">⏳</div>
-        <p>Loading your farms...</p>
+        <p data-i18n="loading_farms">Loading your farms...</p>
       </div>
     </div>
   </div>
 
   <!-- Modal 1: Add/Edit Farm -->
   <div id="farm-modal" class="modal-overlay">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 620px;">
       <div class="modal-header">
         <h3 id="farm-modal-title" class="modal-title">Add New Farm</h3>
         <button type="button" class="modal-close" onclick="UI.closeModal('farm-modal')">&times;</button>
@@ -52,16 +56,110 @@
             <label class="form-label" for="area-acres">Area (in Acres) *</label>
             <input type="number" step="0.1" min="0.1" id="area-acres" class="form-control" placeholder="e.g. 5.5" required>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="farm-lat">Latitude</label>
-              <input type="number" step="0.0001" id="farm-lat" class="form-control" placeholder="e.g. 18.5204">
+
+          <!-- Location Picker Section -->
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>📍 <span data-i18n="location">Location</span></span>
+            </label>
+
+            <!-- Search box and "Use my current location" Button -->
+            <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem; flex-wrap:wrap;">
+              <div class="geo-search-container" style="flex:1; min-width:210px;">
+                <input
+                  type="text"
+                  id="geo-search-input"
+                  class="form-control"
+                  placeholder="Search village, town or city"
+                  data-i18n-placeholder="search_location"
+                  autocomplete="off"
+                >
+                <div id="geo-search-spinner" class="geo-search-spinner" style="display:none;">⏳</div>
+                <div id="geo-search-dropdown" class="geo-search-dropdown" style="display:none;"></div>
+              </div>
+              <button
+                type="button"
+                id="btn-use-curr-loc"
+                class="btn btn-secondary"
+                style="white-space:nowrap; display:flex; align-items:center; gap:0.35rem;"
+                onclick="handleUseCurrentLocation()"
+              >
+                <span>📍</span> <span data-i18n="use_current_location">Use my current location</span>
+              </button>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="farm-lon">Longitude</label>
-              <input type="number" step="0.0001" id="farm-lon" class="form-control" placeholder="e.g. 73.8567">
+
+            <!-- Leaflet Interactive Map -->
+            <div style="margin-bottom:0.5rem;">
+              <div id="farm-map"></div>
+              <div style="display:flex; justify-content:space-between; margin-top:0.25rem;">
+                <small style="color:var(--text-muted); font-size:0.75rem;" data-i18n="map_instruction">
+                  Click map or drag pin to set farm location
+                </small>
+              </div>
+            </div>
+
+            <!-- Location Label (Village, District, State) -->
+            <div class="form-group" style="margin-bottom:0.5rem;">
+              <label class="form-label" for="farm-location-label" style="font-size:0.82rem;" data-i18n="location_label">
+                Location Label
+              </label>
+              <input
+                type="text"
+                id="farm-location-label"
+                class="form-control"
+                placeholder="e.g. Pune, Maharashtra"
+                maxlength="150"
+              >
+            </div>
+
+            <!-- Soft Warning for Outside India -->
+            <div id="geo-warning-banner" class="alert alert-warning" style="display:none; margin-bottom:0.5rem; font-size:0.82rem; padding:0.5rem 0.75rem;">
+              <span>⚠️</span>
+              <span id="geo-warning-text" data-i18n="soft_warning_outside_india">Coordinates appear to be outside India (expected lat 6-38, lon 68-98)</span>
+            </div>
+
+            <!-- Profile District/Village Fill Offer Box -->
+            <div id="profile-address-prompt" class="profile-address-box" style="display:none; margin-bottom:0.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                <div>
+                  <div style="color:#166534; font-weight:700; font-size:0.82rem;" data-i18n="fill_profile_prompt">
+                    Update your profile district/village with this location?
+                  </div>
+                  <div id="profile-address-preview" style="color:#15803d; font-size:0.75rem; margin-top:2px;"></div>
+                </div>
+                <button
+                  type="button"
+                  id="btn-save-profile-address"
+                  class="btn btn-primary btn-sm"
+                  style="padding:0.25rem 0.6rem; font-size:0.75rem;"
+                  onclick="handleSaveProfileAddress()"
+                  data-i18n="update_profile_btn"
+                >
+                  Save to Profile
+                </button>
+              </div>
+            </div>
+
+            <!-- Coordinates Toggle & Readonly Lat/Lon Inputs -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem; margin-top:0.5rem;">
+              <span style="font-size:0.8rem; font-weight:600; color:var(--text-muted);">Coordinates</span>
+              <label style="font-size:0.78rem; color:var(--primary-dark); cursor:pointer; display:flex; align-items:center; gap:0.35rem; font-weight:600;">
+                <input type="checkbox" id="manual-coords-toggle" onchange="toggleManualCoords(this.checked)">
+                <span data-i18n="enter_coords_manually">Enter coordinates manually</span>
+              </label>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0.5rem;">
+                <label class="form-label" for="farm-lat" style="font-size:0.8rem;">Latitude</label>
+                <input type="number" step="0.000001" id="farm-lat" class="form-control" placeholder="e.g. 18.5204" readonly>
+              </div>
+              <div class="form-group" style="margin-bottom:0.5rem;">
+                <label class="form-label" for="farm-lon" style="font-size:0.8rem;">Longitude</label>
+                <input type="number" step="0.000001" id="farm-lon" class="form-control" placeholder="e.g. 73.8567" readonly>
+              </div>
             </div>
           </div>
+
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="soil-type">Soil Type</label>
@@ -262,28 +360,355 @@
     </div>
   </div>
 
+  <script src="/static/vendor/leaflet/leaflet.js"></script>
   <script src="/static/js/api.js"></script>
   <script>
     let currentFarmsList = [];
+    let farmMap = null;
+    let farmMarker = null;
+    let searchDebounceTimer = null;
+    let searchSuggestions = [];
+    let pendingProfileDistrict = "";
+    let pendingProfileVillage = "";
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      if (!UI.requireAuth()) return;
+    const DEFAULT_LAT = 19.7515;
+    const DEFAULT_LON = 75.7139;
+
+    function setupLeafletIcons() {
+      if (typeof L === "undefined") return;
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: '/static/vendor/leaflet/images/marker-icon-2x.png',
+        iconUrl: '/static/vendor/leaflet/images/marker-icon.png',
+        shadowUrl: '/static/vendor/leaflet/images/marker-shadow.png',
+      });
+    }
+
+    function ensureFarmMapInit(initialLat = DEFAULT_LAT, initialLon = DEFAULT_LON, initialZoom = 6) {
+      if (typeof L === "undefined") return;
+      setupLeafletIcons();
+      const mapContainer = document.getElementById("farm-map");
+      if (!mapContainer) return;
+
+      if (!farmMap) {
+        farmMap = L.map("farm-map", {
+          zoomControl: true,
+          attributionControl: true
+        }).setView([initialLat, initialLon], initialZoom);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+        }).addTo(farmMap);
+
+        farmMarker = L.marker([initialLat, initialLon], {
+          draggable: true
+        }).addTo(farmMap);
+
+        farmMarker.on("dragend", () => {
+          const pos = farmMarker.getLatLng();
+          onLocationSelected(pos.lat, pos.lng, true);
+        });
+
+        farmMap.on("click", (e) => {
+          farmMarker.setLatLng(e.latlng);
+          onLocationSelected(e.latlng.lat, e.latlng.lng, true);
+        });
+      } else {
+        farmMarker.setLatLng([initialLat, initialLon]);
+        farmMap.setView([initialLat, initialLon], initialZoom);
+      }
+
+      setTimeout(() => {
+        if (farmMap) farmMap.invalidateSize();
+      }, 200);
+    }
+
+    function validateCoords(lat, lon) {
+      const warningEl = document.getElementById("geo-warning-banner");
+      if (!warningEl) return true;
+      // India bounds: lat 6-38, lon 68-98
+      const isOutside = lat < 6.0 || lat > 38.0 || lon < 68.0 || lon > 98.0;
+      if (isOutside) {
+        warningEl.style.display = "flex";
+      } else {
+        warningEl.style.display = "none";
+      }
+      return !isOutside;
+    }
+
+    async function onLocationSelected(lat, lon, doReverse = true) {
+      const latInput = document.getElementById("farm-lat");
+      const lonInput = document.getElementById("farm-lon");
+      if (latInput) latInput.value = parseFloat(lat).toFixed(6);
+      if (lonInput) lonInput.value = parseFloat(lon).toFixed(6);
+
+      validateCoords(lat, lon);
+
+      if (doReverse) {
+        const labelInput = document.getElementById("farm-location-label");
+        const prevPlaceholder = labelInput.placeholder;
+        labelInput.placeholder = UI.t("locating", "Detecting location...");
+
+        try {
+          const rev = await API.geoReverse(lat, lon);
+          if (rev && rev.label) {
+            labelInput.value = rev.label;
+            if (rev.warning) {
+              const warningEl = document.getElementById("geo-warning-banner");
+              if (warningEl) warningEl.style.display = "flex";
+            }
+            checkAndOfferProfileAddress(rev.address);
+          }
+        } catch (err) {
+          console.warn("Reverse geocode failed:", err);
+        } finally {
+          labelInput.placeholder = prevPlaceholder;
+        }
+      }
+    }
+
+    function checkAndOfferProfileAddress(address) {
+      if (!address || typeof address !== 'object') return;
+      const farmer = API.getFarmer();
+      if (!farmer) return;
+
+      const hasDistrict = Boolean(farmer.district && farmer.district.trim());
+      const hasVillage = Boolean(farmer.village && farmer.village.trim());
+
+      // If farmer already has both, nothing to offer
+      if (hasDistrict && hasVillage) return;
+
+      const candidateDistrict = address.state_district || address.district || address.county || "";
+      const candidateVillage = address.village || address.suburb || address.town || address.city || address.hamlet || address.neighbourhood || "";
+
+      const fillDistrict = (!hasDistrict && candidateDistrict) ? candidateDistrict.trim() : (farmer.district || "");
+      const fillVillage = (!hasVillage && candidateVillage) ? candidateVillage.trim() : (farmer.village || "");
+
+      const canPopulateDistrict = !hasDistrict && Boolean(candidateDistrict);
+      const canPopulateVillage = !hasVillage && Boolean(candidateVillage);
+
+      if (!canPopulateDistrict && !canPopulateVillage) return;
+
+      pendingProfileDistrict = fillDistrict;
+      pendingProfileVillage = fillVillage;
+
+      const promptEl = document.getElementById("profile-address-prompt");
+      const previewEl = document.getElementById("profile-address-preview");
+      if (previewEl) {
+        previewEl.textContent = `District: ${fillDistrict || '—'} • Village: ${fillVillage || '—'}`;
+      }
+      if (promptEl) {
+        promptEl.style.display = "block";
+      }
+    }
+
+    async function handleSaveProfileAddress() {
+      const btn = document.getElementById("btn-save-profile-address");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+      }
+      try {
+        await API.updateFarmerAddress({
+          district: pendingProfileDistrict || null,
+          village: pendingProfileVillage || null
+        });
+        const promptEl = document.getElementById("profile-address-prompt");
+        if (promptEl) promptEl.style.display = "none";
+        UI.showAlert("farm-modal-alert", "Farmer profile updated with location district/village!", "success");
+      } catch (err) {
+        UI.showAlert("farm-modal-alert", "Failed to update profile: " + err.message, "danger");
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = UI.t("update_profile_btn", "Save to Profile");
+        }
+      }
+    }
+
+    function handleUseCurrentLocation() {
+      const btn = document.getElementById("btn-use-curr-loc");
+      const origHtml = btn ? btn.innerHTML : "";
+
+      if (!navigator.geolocation) {
+        UI.showAlert("farm-modal-alert", UI.t("loc_unavailable", "Current location unavailable. Please search or pick on map."), "warning");
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>⏳</span> <span>${UI.t("locating", "Detecting location...")}</span>`;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+          }
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+
+          ensureFarmMapInit(lat, lon, 14);
+          if (farmMarker) farmMarker.setLatLng([lat, lon]);
+          if (farmMap) farmMap.setView([lat, lon], 14);
+
+          await onLocationSelected(lat, lon, true);
+        },
+        (err) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+          }
+          let msg = UI.t("loc_unavailable", "Current location unavailable. Please search or pick on map.");
+          if (err.code === 1) { // PERMISSION_DENIED
+            msg = UI.t("loc_denied", "Location access was denied. Please search or pick on map.");
+          } else if (err.code === 2) { // POSITION_UNAVAILABLE
+            msg = UI.t("loc_unavailable", "Current location unavailable. Please search or pick on map.");
+          } else if (err.code === 3) { // TIMEOUT
+            msg = UI.t("loc_timeout", "Location request timed out. Please try again or search.");
+          }
+          UI.showAlert("farm-modal-alert", msg, "warning");
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 30000
+        }
+      );
+    }
+
+    function toggleManualCoords(isManual) {
+      const latInput = document.getElementById("farm-lat");
+      const lonInput = document.getElementById("farm-lon");
+      if (latInput) latInput.readOnly = !isManual;
+      if (lonInput) lonInput.readOnly = !isManual;
+    }
+
+    function handleManualCoordsChange() {
+      const latVal = parseFloat(document.getElementById("farm-lat").value);
+      const lonVal = parseFloat(document.getElementById("farm-lon").value);
+      if (!isNaN(latVal) && !isNaN(lonVal) && latVal >= -90 && latVal <= 90 && lonVal >= -180 && lonVal <= 180) {
+        validateCoords(latVal, lonVal);
+        if (farmMarker) farmMarker.setLatLng([latVal, lonVal]);
+        if (farmMap) farmMap.panTo([latVal, lonVal]);
+      }
+    }
+
+    function initGeoSearch() {
+      const input = document.getElementById("geo-search-input");
+      const dropdown = document.getElementById("geo-search-dropdown");
+      const spinner = document.getElementById("geo-search-spinner");
+      if (!input || !dropdown) return;
+
+      input.addEventListener("input", () => {
+        const q = input.value.trim();
+        clearTimeout(searchDebounceTimer);
+
+        if (q.length < 2) {
+          dropdown.style.display = "none";
+          if (spinner) spinner.style.display = "none";
+          return;
+        }
+
+        if (spinner) spinner.style.display = "block";
+
+        searchDebounceTimer = setTimeout(async () => {
+          try {
+            const results = await API.geoSearch(q);
+            searchSuggestions = results || [];
+            renderGeoSuggestions(searchSuggestions);
+          } catch (err) {
+            console.warn("Geo search error:", err);
+            dropdown.style.display = "none";
+          } finally {
+            if (spinner) spinner.style.display = "none";
+          }
+        }, 350);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".geo-search-container")) {
+          dropdown.style.display = "none";
+        }
+      });
+    }
+
+    function renderGeoSuggestions(suggestions) {
+      const dropdown = document.getElementById("geo-search-dropdown");
+      if (!dropdown) return;
+
+      if (!suggestions || suggestions.length === 0) {
+        dropdown.innerHTML = `<div class="geo-search-empty">No matching places found</div>`;
+        dropdown.style.display = "block";
+        return;
+      }
+
+      dropdown.innerHTML = suggestions.map((item, idx) => `
+        <div class="geo-search-item" onclick="selectGeoSuggestion(${idx})">
+          <div class="geo-search-item-primary">📍 ${item.label}</div>
+          <div class="geo-search-item-secondary">${item.display_name}</div>
+        </div>
+      `).join("");
+      dropdown.style.display = "block";
+    }
+
+    function selectGeoSuggestion(idx) {
+      const item = searchSuggestions[idx];
+      if (!item) return;
+
+      const dropdown = document.getElementById("geo-search-dropdown");
+      if (dropdown) dropdown.style.display = "none";
+
+      const searchInput = document.getElementById("geo-search-input");
+      if (searchInput) searchInput.value = item.label;
+
+      const labelInput = document.getElementById("farm-location-label");
+      if (labelInput) labelInput.value = item.label;
+
+      ensureFarmMapInit(item.lat, item.lon, 13);
+      if (farmMarker) farmMarker.setLatLng([item.lat, item.lon]);
+      if (farmMap) farmMap.setView([item.lat, item.lon], 13);
+
+      onLocationSelected(item.lat, item.lon, false);
+      checkAndOfferProfileAddress(item.address);
+    }
+
+    async function initFarms() {
+      if (!(await UI.requireAuth())) return;
       UI.renderNavbar("farms");
 
       // Set default soil test date to today
       const today = new Date().toISOString().split("T")[0];
       document.getElementById("soil-date").value = today;
-      document.getElementById("sowing-date").value = today;
 
       await loadFarms();
+
+      // Refresh on cycle started
+      window.addEventListener("agri_cycle_started", async () => {
+        await loadFarms();
+      });
 
       // Form Bindings
       document.getElementById("farm-form").addEventListener("submit", handleSaveFarm);
       document.getElementById("soil-form").addEventListener("submit", handleSaveSoil);
-      document.getElementById("start-crop-form").addEventListener("submit", handleStartCycle);
-    });
+
+      document.getElementById("farm-lat").addEventListener("input", handleManualCoordsChange);
+      document.getElementById("farm-lon").addEventListener("input", handleManualCoordsChange);
+
+      initGeoSearch();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initFarms);
+    } else {
+      initFarms();
+    }
 
     async function loadFarms() {
+      const container = document.getElementById("farms-container");
+      if (container) container.innerHTML = UI.getCardSkeleton(3);
       try {
         currentFarmsList = await API.getFarms();
         renderFarmsList(currentFarmsList);
@@ -295,59 +720,95 @@
     function renderFarmsList(farms) {
       const container = document.getElementById("farms-container");
       if (!farms || farms.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state" style="grid-column: 1 / -1; background:#ffffff; border:1px dashed var(--border); border-radius:var(--radius-lg);">
-            <div class="empty-state-icon">🚜</div>
-            <h3 style="font-weight:700; color:#334155; margin-bottom:0.4rem;">No Farms Added Yet</h3>
-            <p style="font-size:0.9rem; margin-bottom:1.25rem;">Add your farm plot details to get personalized crop recommendations.</p>
-            <button type="button" class="btn btn-primary" onclick="openAddFarmModal()">+ Add Your First Farm</button>
-          </div>
-        `;
+        container.innerHTML = UI.getEmptyState(
+          "🚜",
+          UI.t("no_farms_yet", "No Farms Added Yet"),
+          UI.t("no_farms_desc", "Add your farm plot details to get personalized crop recommendations."),
+          '<button type="button" class="btn btn-primary" onclick="openAddFarmModal()">+ ' + UI.t("add_farm", "Add Your First Farm") + '</button>'
+        );
         return;
       }
 
       container.innerHTML = farms.map((f) => {
         const hasGps = f.latitude !== null && f.longitude !== null;
+        const gpsText = hasGps ? `${Number(f.latitude).toFixed(4)}, ${Number(f.longitude).toFixed(4)}` : '';
+        const locationText = f.location_label || (hasGps ? `GPS: ${gpsText}` : UI.t("no_gps_recorded", "No GPS Recorded"));
+
         return `
-          <div class="cycle-card">
+          <div class="card card-interactive" style="display:flex; flex-direction:column; justify-content:space-between; padding:1.25rem;">
             <div>
-              <div class="cycle-card-top">
-                <div>
-                  <h3 class="cycle-crop-name">${f.farm_name}</h3>
-                  <div class="cycle-farm-name">📏 ${f.area_acres} Acres &bull; ${f.irrigation}</div>
+              <!-- Map Thumbnail or Styled Placeholder -->
+              ${hasGps ? `
+                <div class="farm-map-thumbnail" style="height:96px; border-radius:var(--radius-md); background:linear-gradient(135deg, var(--surface-alt) 0%, var(--border) 100%); position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:0.85rem; border:1px solid var(--border);">
+                  <svg style="position:absolute; inset:0; width:100%; height:100%; opacity:0.18; color:var(--primary);" viewBox="0 0 100 60" preserveAspectRatio="none">
+                    <path d="M0,20 Q30,5 60,30 T100,20 M0,45 Q40,30 80,50 T100,40" fill="none" stroke="currentColor" stroke-width="2" />
+                    <circle cx="50" cy="30" r="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3,3" />
+                  </svg>
+                  <div style="z-index:2; display:flex; align-items:center; gap:0.35rem; background:var(--surface); padding:0.25rem 0.65rem; border-radius:var(--radius-full); box-shadow:var(--shadow-sm); border:1px solid var(--border);">
+                    <span style="font-size:0.95rem;">📍</span>
+                    <span style="font-size:0.75rem; font-weight:700; color:var(--ink);">${gpsText}</span>
+                  </div>
                 </div>
-                <button class="btn btn-secondary btn-sm" onclick="openEditFarmModal(${f.farm_id})">✏️ Edit</button>
+              ` : `
+                <div class="farm-map-thumbnail farm-no-coords" style="height:76px; border-radius:var(--radius-md); background:var(--surface-alt); border:1.5px dashed var(--border-strong); display:flex; align-items:center; justify-content:center; gap:0.4rem; margin-bottom:0.85rem; color:var(--muted); font-size:0.8rem;">
+                  <span style="font-size:1.1rem;">📍</span>
+                  <span data-i18n="no_gps_recorded">${UI.t("no_gps_recorded", "No GPS Coordinates")}</span>
+                </div>
+              `}
+
+              <!-- Farm Title & Area -->
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem; margin-bottom:0.5rem;">
+                <div>
+                  <h3 style="font-size:1.2rem; font-weight:700; color:var(--ink); margin:0;">${f.farm_name}</h3>
+                  <div style="font-size:0.82rem; color:var(--muted); margin-top:2px; font-weight:600;">
+                    📏 ${f.area_acres} <span data-i18n="acres">Acres</span>
+                  </div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="openEditFarmModal(${f.farm_id})" style="padding:0.2rem 0.6rem; font-size:0.75rem;" title="Edit Farm">
+                  ✏️ <span data-i18n="edit">${UI.t('edit', 'Edit')}</span>
+                </button>
               </div>
 
-              <div class="cycle-metrics" style="margin-top:0.75rem;">
-                <div class="cycle-metric-item">
-                  <span class="label">Soil Type:</span>
-                  <span class="val">${f.soil_type || 'Unspecified'}</span>
-                </div>
-                <div class="cycle-metric-item">
-                  <span class="label">GPS:</span>
-                  <span class="val">${hasGps ? `${f.latitude.toFixed(2)}, ${f.longitude.toFixed(2)}` : 'No GPS'}</span>
-                </div>
+              <!-- Irrigation & Soil Chips -->
+              <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.65rem;">
+                <span class="chip" style="background:var(--info-subtle); color:var(--info-water); border:1px solid var(--info-water); font-size:0.75rem;">
+                  💧 ${f.irrigation}
+                </span>
+                <span class="chip" style="background:var(--accent-gold-subtle); color:#92400e; border:1px solid var(--accent-gold); font-size:0.75rem;">
+                  🌱 ${f.soil_type || 'Unspecified'}
+                </span>
+              </div>
+
+              <!-- Location Label -->
+              <div style="display:flex; align-items:flex-start; gap:0.35rem; color:var(--muted); font-size:0.85rem; margin-bottom:1rem;">
+                <span style="flex-shrink:0;">📍</span>
+                <span style="font-weight:600; color:var(--ink); word-break:break-word;">${locationText}</span>
               </div>
             </div>
 
-            <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:1rem;">
+            <!-- Clear Actions (Recommend, Soil Test, Fertilizer Plan, Weather, What to Grow Next) -->
+            <div style="display:flex; flex-direction:column; gap:0.5rem; border-top:1px solid var(--border); padding-top:0.85rem;">
               <button class="btn btn-primary btn-sm btn-block" onclick="openRecommendModal(${f.farm_id}, '${f.farm_name}')">
-                ✨ <span data-i18n="recommend_crop">Recommend Crop</span>
+                ✨ <span data-i18n="recommend_crop">${UI.t('recommend_crop', 'Recommend')}</span>
               </button>
 
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
                 <button class="btn btn-secondary btn-sm" onclick="openSoilModal(${f.farm_id})">
-                  🧪 Soil Test
+                  🧪 <span data-i18n="soil_test">${UI.t('soil_test', 'Soil Test')}</span>
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="handleRefreshWeather(${f.farm_id})">
-                  ⛅ Weather
+                <button class="btn btn-secondary btn-sm" onclick="UI.openFertilizerPlanModal({ farmId: ${f.farm_id}, farmName: '${f.farm_name}' })">
+                  🌿 <span data-i18n="fertilizer_plan">${UI.t('fertilizer_plan', 'Fertilizer Plan')}</span>
                 </button>
               </div>
 
-              <button class="btn btn-secondary btn-sm btn-block" style="background:#f8fafc; border-color:#cbd5e1;" onclick="openRotationAdviceModal(${f.farm_id}, '${f.farm_name}')">
-                🔄 What to Grow Next
-              </button>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <button class="btn btn-secondary btn-sm" onclick="handleRefreshWeather(${f.farm_id})">
+                  ⛅ <span data-i18n="weather">${UI.t('weather', 'Weather')}</span>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="openRotationAdviceModal(${f.farm_id}, '${f.farm_name}')">
+                  🔄 <span data-i18n="what_to_grow_next">${UI.t('what_to_grow_next', 'What to Grow Next')}</span>
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -360,12 +821,26 @@
       document.getElementById("farm-id-hidden").value = "";
       document.getElementById("farm-name").value = "";
       document.getElementById("area-acres").value = "";
+      document.getElementById("farm-location-label").value = "";
       document.getElementById("farm-lat").value = "";
       document.getElementById("farm-lon").value = "";
       document.getElementById("soil-type").value = "";
       document.getElementById("irrigation").value = "Rainfed";
+      document.getElementById("geo-search-input").value = "";
+      document.getElementById("geo-search-dropdown").style.display = "none";
+      document.getElementById("geo-warning-banner").style.display = "none";
+      document.getElementById("profile-address-prompt").style.display = "none";
+
+      const manualToggle = document.getElementById("manual-coords-toggle");
+      if (manualToggle) {
+        manualToggle.checked = false;
+        toggleManualCoords(false);
+      }
+
       UI.clearAlert("farm-modal-alert");
       UI.openModal("farm-modal");
+
+      ensureFarmMapInit(DEFAULT_LAT, DEFAULT_LON, 6);
     }
 
     function openEditFarmModal(farmId) {
@@ -376,12 +851,35 @@
       document.getElementById("farm-id-hidden").value = f.farm_id;
       document.getElementById("farm-name").value = f.farm_name;
       document.getElementById("area-acres").value = f.area_acres;
+      document.getElementById("farm-location-label").value = f.location_label || "";
       document.getElementById("farm-lat").value = f.latitude !== null ? f.latitude : "";
       document.getElementById("farm-lon").value = f.longitude !== null ? f.longitude : "";
       document.getElementById("soil-type").value = f.soil_type || "";
       document.getElementById("irrigation").value = f.irrigation || "Rainfed";
+      document.getElementById("geo-search-input").value = "";
+      document.getElementById("geo-search-dropdown").style.display = "none";
+      document.getElementById("profile-address-prompt").style.display = "none";
+
+      const manualToggle = document.getElementById("manual-coords-toggle");
+      if (manualToggle) {
+        manualToggle.checked = false;
+        toggleManualCoords(false);
+      }
+
       UI.clearAlert("farm-modal-alert");
       UI.openModal("farm-modal");
+
+      const hasCoords = f.latitude !== null && f.longitude !== null;
+      const targetLat = hasCoords ? f.latitude : DEFAULT_LAT;
+      const targetLon = hasCoords ? f.longitude : DEFAULT_LON;
+      const targetZoom = hasCoords ? 13 : 6;
+
+      ensureFarmMapInit(targetLat, targetLon, targetZoom);
+      if (hasCoords) {
+        validateCoords(f.latitude, f.longitude);
+      } else {
+        document.getElementById("geo-warning-banner").style.display = "none";
+      }
     }
 
     async function handleSaveFarm(e) {
@@ -392,6 +890,7 @@
       const payload = {
         farm_name: document.getElementById("farm-name").value.trim(),
         area_acres: parseFloat(document.getElementById("area-acres").value),
+        location_label: document.getElementById("farm-location-label").value.trim() || null,
         latitude: document.getElementById("farm-lat").value ? parseFloat(document.getElementById("farm-lat").value) : null,
         longitude: document.getElementById("farm-lon").value ? parseFloat(document.getElementById("farm-lon").value) : null,
         soil_type: document.getElementById("soil-type").value || null,
@@ -462,22 +961,17 @@
       document.getElementById("recom-farm-name-subtitle").textContent = `Plot: ${farmName}`;
       UI.clearAlert("recom-modal-alert");
       const container = document.getElementById("recom-results-container");
-      container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">🔄</div>
-          <p>Running agronomic suitability scoring procedure...</p>
-        </div>
-      `;
+      container.innerHTML = UI.getCardSkeleton(2);
       UI.openModal("recom-modal");
 
       try {
         const res = await API.recommendCrops(farmId, { season: "auto" });
         if (!res.recommendations || res.recommendations.length === 0) {
-          container.innerHTML = `
-            <div class="empty-state">
-              <p>No crops matched your soil and weather criteria.</p>
-            </div>
-          `;
+          container.innerHTML = UI.getEmptyState(
+            "🌱",
+            UI.t("no_recs_matched", "No Matching Crops Found"),
+            UI.t("no_recs_desc", "No crops matched your soil and weather criteria. Try updating soil test values.")
+          );
           return;
         }
 
@@ -494,74 +988,108 @@
           console.warn("Could not fetch profit estimates:", e);
         }
 
+        const cropIcons = {
+          rice: "🌾", wheat: "🌾", maize: "🌽", cotton: "🌱", sugarcane: "🎋",
+          soybean: "🫘", gram: "🫘", onion: "🧅", tomato: "🍅", potato: "🥔",
+          banana: "🍌", mango: "🥭", grapes: "🍇", pomegranate: "🍎"
+        };
+
         container.innerHTML = `
-          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-sm); padding:0.65rem 0.85rem; margin-bottom:1rem; font-size:0.8rem; color:#166534; display:flex; gap:0.5rem; align-items:center;">
+          <div style="background:var(--primary-subtle); border:1px solid var(--primary); border-radius:var(--radius-md); padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.82rem; color:var(--ink); display:flex; gap:0.5rem; align-items:center;">
             <span>💡</span>
-            <span><strong>Note on Economics:</strong> Expected price, yield, and cultivation costs are indicative estimates based on regional university crop budgets and recent APMC mandi rates. Actual yields and profits vary with weather and market conditions.</span>
+            <span><strong>${UI.t('economics_note_title', 'Note on Economics')}:</strong> ${UI.t('economics_note_desc', 'Expected price, yield, and cultivation costs are indicative estimates based on regional university crop budgets and recent APMC mandi rates.')}</span>
           </div>
         ` + res.recommendations.map((c) => {
           const p = profitMap[c.crop_id] || {};
           const hasPrice = p.price_per_quintal !== null && p.price_per_quintal !== undefined;
           const isPositiveProfit = (p.profit_per_acre || 0) >= 0;
+          const cNameLower = (c.crop_name || "").toLowerCase();
+          const cropIcon = cropIcons[cNameLower] || "🌱";
 
           return `
-            <div class="recom-card ${c.rank_no === 1 ? 'top-rank' : ''}" style="margin-bottom:1rem; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:1rem; background:#fff;">
-              <div class="recom-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
-                <div>
-                  <span style="font-size:0.75rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px;">
-                    Rank #${c.rank_no} &bull; ${UI.translateSeason(c.season)}
-                  </span>
-                  <h4 style="font-size:1.25rem; font-weight:800; color:#0f172a; margin:0.15rem 0;">${UI.translateCrop(c.crop_name)}</h4>
+            <div class="card ${c.rank_no === 1 ? 'card-interactive' : ''}" style="margin-bottom:1.25rem; border:1.5px solid ${c.rank_no === 1 ? 'var(--primary)' : 'var(--border)'}; padding:1.25rem; background:var(--surface);">
+              <!-- Top Row: Localized Crop Info + Circular Suitability Gauge -->
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                  <div style="width:52px; height:52px; border-radius:var(--radius-md); background:var(--primary-subtle); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.75rem; flex-shrink:0;">
+                    ${cropIcon}
+                  </div>
+                  <div>
+                    <span class="badge" style="background:${c.rank_no === 1 ? 'var(--primary)' : 'var(--surface-alt)'}; color:${c.rank_no === 1 ? '#FFFFFF' : 'var(--ink)'}; font-weight:700;">
+                      🏆 Rank #${c.rank_no} &bull; ${UI.translateSeason(c.season)}
+                    </span>
+                    <h4 style="font-size:1.3rem; font-weight:800; color:var(--ink); margin:0.2rem 0 0 0;">
+                      ${UI.translateCrop(c.crop_name)}
+                    </h4>
+                  </div>
                 </div>
-                <div style="text-align:right;">
-                  <span style="font-size:1.45rem; font-weight:800; color:var(--primary-dark);">${c.suitability}%</span>
-                  <div style="font-size:0.75rem; color:var(--text-muted);">Suitability</div>
+
+                <!-- Circular Suitability Gauge -->
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <div style="text-align:right;">
+                    <div style="font-size:0.72rem; font-weight:700; color:var(--muted); text-transform:uppercase;">${UI.t('suitability', 'Suitability')}</div>
+                  </div>
+                  ${UI.renderCircularProgress(c.suitability, 68, 6)}
                 </div>
               </div>
 
-              <!-- Agronomic Factor Scores -->
-              <div class="recom-scores-grid" style="display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.85rem;">
-                <div class="score-chip"><span class="k">pH</span><span class="v">${c.ph_score}%</span></div>
-                <div class="score-chip"><span class="k">Temp</span><span class="v">${c.temp_score}%</span></div>
-                <div class="score-chip"><span class="k">Humidity</span><span class="v">${c.humidity_score}%</span></div>
-                <div class="score-chip"><span class="k">Rainfall</span><span class="v">${c.rain_score}%</span></div>
-                <div class="score-chip"><span class="k">N</span><span class="v">${c.n_score}%</span></div>
-                <div class="score-chip"><span class="k">P</span><span class="v">${c.p_score}%</span></div>
-                <div class="score-chip"><span class="k">K</span><span class="v">${c.k_score}%</span></div>
+              <!-- Agronomic Factor Breakdown with Horizontal Bars -->
+              <div style="background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--radius-md); padding:0.85rem; margin-bottom:1rem; display:flex; flex-direction:column; gap:0.45rem;">
+                <div style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:0.15rem;">
+                  <span>Agronomic Factor</span>
+                  <span>Match Score</span>
+                </div>
+                ${[
+                  { label: "pH", val: c.ph_score },
+                  { label: "Temperature", val: c.temp_score },
+                  { label: "Humidity", val: c.humidity_score },
+                  { label: "Rainfall", val: c.rain_score },
+                  { label: "Nitrogen (N)", val: c.n_score },
+                  { label: "Phosphorus (P)", val: c.p_score },
+                  { label: "Potassium (K)", val: c.k_score },
+                ].map(f => `
+                  <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem;">
+                    <span style="min-width:105px; color:var(--ink-secondary); font-weight:600;">${f.label}</span>
+                    <div class="bar-track" style="flex:1;">
+                      <div class="bar-fill" style="width:${Math.min(100, f.val)}%;"></div>
+                    </div>
+                    <span style="min-width:40px; text-align:right; font-weight:700; color:var(--ink);">${f.val}%</span>
+                  </div>
+                `).join("")}
               </div>
 
-              <!-- Economic Forecast Box -->
-              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-sm); padding:0.75rem 0.85rem; margin-bottom:0.85rem;">
-                <div style="font-size:0.75rem; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom:0.5rem; letter-spacing:0.5px; display:flex; justify-content:space-between;">
+              <!-- Financial Economics Forecast -->
+              <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:0.85rem; margin-bottom:1rem;">
+                <div style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:0.5rem; display:flex; justify-content:space-between;">
                   <span>💰 Financial Economics (Estimated)</span>
-                  ${p.price_district ? `<span style="font-weight:600; color:#64748b;">Mandi: ${p.price_district}</span>` : ''}
+                  ${p.price_district ? `<span style="font-weight:600; color:var(--muted);">Mandi: ${p.price_district}</span>` : ''}
                 </div>
                 ${hasPrice ? `
                   <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:0.6rem; font-size:0.85rem;">
                     <div>
-                      <div style="font-size:0.72rem; color:#64748b;">Expected Price</div>
-                      <div style="font-weight:700; color:#0f172a;">${UI.formatCurrency(p.price_per_quintal)}/q</div>
+                      <div style="font-size:0.72rem; color:var(--muted);">Expected Price</div>
+                      <div style="font-weight:700; color:var(--ink);">${UI.formatCurrency(p.price_per_quintal)}/q</div>
                     </div>
                     <div>
-                      <div style="font-size:0.72rem; color:#64748b;">Gross Revenue / Acre</div>
-                      <div style="font-weight:700; color:#0f172a;">${UI.formatCurrency(p.revenue_per_acre)}</div>
+                      <div style="font-size:0.72rem; color:var(--muted);">Gross Revenue / Acre</div>
+                      <div style="font-weight:700; color:var(--ink);">${UI.formatCurrency(p.revenue_per_acre)}</div>
                     </div>
                     <div>
-                      <div style="font-size:0.72rem; color:#64748b;">Profit / Acre</div>
-                      <div style="font-weight:800; color:${isPositiveProfit ? '#16a34a' : '#dc2626'};">${UI.formatCurrency(p.profit_per_acre)}</div>
+                      <div style="font-size:0.72rem; color:var(--muted);">Profit / Acre</div>
+                      <div style="font-weight:800; color:${isPositiveProfit ? 'var(--success)' : 'var(--danger)'};">${UI.formatCurrency(p.profit_per_acre)}</div>
                     </div>
                     <div>
-                      <div style="font-size:0.72rem; color:#64748b;">Profit / Acre / Month</div>
-                      <div style="font-weight:700; color:${isPositiveProfit ? '#16a34a' : '#dc2626'};">${UI.formatCurrency(p.profit_per_acre_per_month)}</div>
+                      <div style="font-size:0.72rem; color:var(--muted);">Profit / Acre / Month</div>
+                      <div style="font-weight:700; color:${isPositiveProfit ? 'var(--success)' : 'var(--danger)'};">${UI.formatCurrency(p.profit_per_acre_per_month)}</div>
                     </div>
-                    <div style="grid-column: 1 / -1; background:#ecfdf5; border:1px dashed #6ee7b7; border-radius:4px; padding:0.4rem 0.6rem; display:flex; justify-content:space-between; align-items:center;">
-                      <span style="font-weight:700; color:#065f46; font-size:0.82rem;">Farm Projected Net Profit:</span>
-                      <span style="font-size:1.05rem; font-weight:800; color:#047857;">${UI.formatCurrency(p.profit_for_farm)}</span>
+                    <div style="grid-column: 1 / -1; background:var(--primary-subtle); border:1px solid var(--primary); border-radius:var(--radius-sm); padding:0.5rem 0.75rem; display:flex; justify-content:space-between; align-items:center;">
+                      <span style="font-weight:700; color:var(--ink); font-size:0.85rem;">Farm Projected Net Profit:</span>
+                      <span style="font-size:1.15rem; font-weight:800; color:var(--primary);">${UI.formatCurrency(p.profit_for_farm)}</span>
                     </div>
                   </div>
                 ` : `
-                  <div style="font-size:0.8rem; color:#64748b; font-style:italic;">
-                    ℹ️ No current mandi price data recorded for this crop yet. Showing agronomic scores only.
+                  <div style="font-size:0.82rem; color:var(--muted); font-style:italic;">
+                    ℹ️ No current mandi price data recorded for this crop yet. Showing agronomic suitability scores.
                   </div>
                 `}
               </div>
@@ -571,16 +1099,16 @@
                 <button
                   type="button"
                   class="btn btn-secondary btn-sm"
-                  onclick="openFertilizerPlanModal(${farmId}, '${farmName}', ${c.crop_id}, '${c.crop_name}')"
+                  onclick="UI.openFertilizerPlanModal({ farmId: ${farmId}, farmName: '${farmName}', cropId: ${c.crop_id}, cropName: '${c.crop_name}' })"
                 >
-                  🧪 Fertilizer Plan
+                  🌿 <span data-i18n="fertilizer_plan">${UI.t('fertilizer_plan', 'Fertilizer Plan')}</span>
                 </button>
                 <button
                   type="button"
                   class="btn btn-primary btn-sm"
-                  onclick="openStartCropModal(${farmId}, '${farmName}', ${c.crop_id}, '${c.crop_name}', ${c.prediction_id || 'null'})"
+                  onclick="UI.openStartCycleModal({ preselectedFarmId: ${farmId}, preselectedCropId: ${c.crop_id}, predictionId: ${c.prediction_id || 'null'}, onSuccess: () => { UI.closeModal('recom-modal'); } })"
                 >
-                  🌱 Start This Crop
+                  🌱 <span data-i18n="start_this_crop">${UI.t('start_this_crop', 'Start This Crop')}</span>
                 </button>
               </div>
             </div>

@@ -30,9 +30,9 @@ def create_farm(
 
     insert_query = """
         INSERT INTO farms (
-            farmer_id, farm_name, area_acres, latitude, longitude, soil_type, irrigation
+            farmer_id, farm_name, area_acres, latitude, longitude, soil_type, irrigation, location_label
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s
         )
     """
     farm_id = db.execute_insert(
@@ -45,11 +45,12 @@ def create_farm(
             payload.longitude,
             payload.soil_type,
             payload.irrigation,
+            payload.location_label,
         ),
     )
 
     fetch_query = """
-        SELECT farm_id, farmer_id, farm_name, area_acres, latitude, longitude, soil_type, irrigation
+        SELECT farm_id, farmer_id, farm_name, area_acres, latitude, longitude, soil_type, irrigation, location_label
         FROM farms
         WHERE farm_id = %s
     """
@@ -74,7 +75,7 @@ def list_farms(
     """Retrieve all farms registered under the logged-in farmer's account."""
     farmer_id = current_farmer["farmer_id"]
     query = """
-        SELECT farm_id, farmer_id, farm_name, area_acres, latitude, longitude, soil_type, irrigation
+        SELECT farm_id, farmer_id, farm_name, area_acres, latitude, longitude, soil_type, irrigation, location_label
         FROM farms
         WHERE farmer_id = %s
         ORDER BY farm_id ASC
@@ -98,7 +99,7 @@ def get_farm(
     farmer_id = current_farmer["farmer_id"]
 
     query = """
-        SELECT farm_id, farmer_id, farm_name, area_acres, latitude, longitude, soil_type, irrigation
+        SELECT farm_id, farmer_id, farm_name, area_acres, latitude, longitude, soil_type, irrigation, location_label
         FROM farms
         WHERE farm_id = %s
     """
@@ -134,7 +135,7 @@ def update_farm(
 
     # Verify existence and ownership
     query = """
-        SELECT farm_id, farmer_id, farm_name, area_acres, latitude, longitude, soil_type, irrigation
+        SELECT farm_id, farmer_id, farm_name, area_acres, latitude, longitude, soil_type, irrigation, location_label
         FROM farms
         WHERE farm_id = %s
     """
@@ -159,6 +160,7 @@ def update_farm(
     longitude = payload.longitude if payload.longitude is not None else existing["longitude"]
     soil_type = payload.soil_type if payload.soil_type is not None else existing["soil_type"]
     irrigation = payload.irrigation if payload.irrigation is not None else existing["irrigation"]
+    location_label = payload.location_label if payload.location_label is not None else existing.get("location_label")
 
     update_query = """
         UPDATE farms
@@ -167,12 +169,13 @@ def update_farm(
             latitude = %s,
             longitude = %s,
             soil_type = %s,
-            irrigation = %s
+            irrigation = %s,
+            location_label = %s
         WHERE farm_id = %s AND farmer_id = %s
     """
     db.execute_update(
         update_query,
-        (farm_name, area_acres, latitude, longitude, soil_type, irrigation, farm_id, farmer_id),
+        (farm_name, area_acres, latitude, longitude, soil_type, irrigation, location_label, farm_id, farmer_id),
     )
 
     updated_farm = db.fetch_one(query, (farm_id,))

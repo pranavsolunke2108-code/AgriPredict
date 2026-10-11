@@ -1,6 +1,6 @@
 """AgriPredict API Routers."""
 
-from . import advisory, alerts, auth, cycles, dashboard, expenses, farms, recommendations, soil_tests, weather
+from . import advisory, alerts, auth, cycles, dashboard, expenses, farms, geo, prices, public, recommendations, soil_tests, weather
 
 __all__ = [
     "advisory",
@@ -10,6 +10,9 @@ __all__ = [
     "dashboard",
     "expenses",
     "farms",
+    "geo",
+    "prices",
+    "public",
     "recommendations",
     "soil_tests",
     "weather",

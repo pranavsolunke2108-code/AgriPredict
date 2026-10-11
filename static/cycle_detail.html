@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Crop Cycle Details - AgriPredict</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/static/css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -12,9 +15,9 @@
         grid-template-columns: 1fr !important;
       }
     }
-  </style>
+</style>
 </head>
-<body>
+<body class="auth-protected">
   <div id="navbar-placeholder"></div>
 
   <div class="container">
@@ -25,7 +28,7 @@
       <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
         <div>
           <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.25rem;">
-            <a href="/ui/dashboard" style="color:var(--primary); text-decoration:none;">&larr; Back to Dashboard</a>
+            <a href="/ui/dashboard" style="color:var(--primary); text-decoration:none;">&larr; <span data-i18n="back_to_dashboard">Back to Dashboard</span></a>
           </div>
           <h1 id="cycle-title" style="font-size:1.8rem; font-weight:800; color:#0f172a;">Loading Cycle...</h1>
           <div id="cycle-subtitle" style="font-size:0.95rem; color:var(--text-muted);">Plot Details</div>
@@ -33,26 +36,30 @@
         <div style="display:flex; align-items:center; gap:0.75rem;">
           <span id="cycle-status-badge" class="badge">Loading</span>
           <button type="button" id="open-close-modal-btn" class="btn btn-danger btn-sm" onclick="openCloseModal()" style="display:none;">
-            🔒 Close Cycle
+            🔒 <span data-i18n="close_cycle">Close Cycle</span>
           </button>
         </div>
       </div>
 
       <div class="kpi-grid" style="margin-top:1.5rem; margin-bottom:0.5rem;">
         <div class="kpi-card">
-          <span class="kpi-label">Sown Date</span>
+          <span class="kpi-label" data-i18n="sown_date">Sown Date</span>
           <span class="kpi-value" id="kpi-sown" style="font-size:1.15rem;">—</span>
         </div>
         <div class="kpi-card">
-          <span class="kpi-label">Expected Harvest</span>
+          <span class="kpi-label" data-i18n="expected_harvest">Expected Harvest</span>
           <span class="kpi-value" id="kpi-expected" style="font-size:1.15rem;">—</span>
         </div>
+        <div class="kpi-card" id="kpi-countdown-card">
+          <span class="kpi-label" data-i18n="harvest_countdown">Harvest Countdown</span>
+          <span class="kpi-value" id="kpi-countdown" style="font-size:1.15rem; color:var(--primary);">—</span>
+        </div>
         <div class="kpi-card kpi-expense">
-          <span class="kpi-label">Total Expenses</span>
+          <span class="kpi-label" data-i18n="total_expenses">Total Expenses</span>
           <span class="kpi-value" id="kpi-expenses" style="font-size:1.35rem;">₹0.00</span>
         </div>
         <div class="kpi-card kpi-revenue">
-          <span class="kpi-label">Harvest Yield</span>
+          <span class="kpi-label" data-i18n="harvest_yield">Harvest Yield</span>
           <span class="kpi-value" id="kpi-yield" style="font-size:1.35rem;">—</span>
         </div>
       </div>
@@ -61,8 +68,8 @@
     <!-- Growth Stages Calendar Timeline Section -->
     <div class="section-header">
       <div>
-        <h2 class="section-title">📅 Growth Stages Calendar & Tasks</h2>
-        <p class="section-subtitle">Real-time stage timeline from crop_calendar_view with tasks and dates</p>
+        <h2 class="section-title">📅 <span data-i18n="growth_stages_calendar">Growth Stages Calendar & Tasks</span></h2>
+        <p class="section-subtitle" data-i18n="growth_stages_subtitle">Real-time stage timeline from crop_calendar_view with tasks and dates</p>
       </div>
     </div>
 
@@ -74,14 +81,36 @@
       </div>
     </div>
 
+    <!-- Fertilizer Plan Section -->
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">🧪 <span data-i18n="fertilizer_plan_title">Fertilizer Plan & Nutrient Dosage</span></h2>
+        <p class="section-subtitle" data-i18n="fertilizer_plan_subtitle">Tailored nutrient dosage recommendations calculated from soil chemistry</p>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="reloadFertilizerPlan()">
+        🔄 <span data-i18n="refresh_plan">Refresh Plan</span>
+      </button>
+    </div>
+
+    <div class="table-card" style="padding:1.5rem; margin-bottom:1.5rem;">
+      <div id="cycle-fertilizer-container">
+        <div class="empty-state">
+          <p>Calculating nutrient dosages based on soil test...</p>
+        </div>
+      </div>
+      <div class="disclaimer-box" style="margin-top:1rem; font-size:0.8rem; color:#64748b; background:#f8fafc; padding:0.6rem 0.85rem; border-radius:var(--radius-sm); border:1px solid #e2e8f0;">
+        ℹ️ <strong>Note:</strong> Fertilizer dosage amounts are indicative calculations based on soil test deficits. Verify against recommendations from your local Agriculture Department or Krishi Vigyan Kendra (KVK).
+      </div>
+    </div>
+
     <!-- Expenses Management Section -->
     <div class="section-header">
       <div>
-        <h2 class="section-title">💸 Crop Expenses & Spend Breakdown</h2>
-        <p class="section-subtitle">Category analytics from cycle_expense_summary_view and itemized input logs</p>
+        <h2 class="section-title">💸 <span data-i18n="crop_expenses_title">Crop Expenses & Spend Breakdown</span></h2>
+        <p class="section-subtitle" data-i18n="crop_expenses_subtitle">Category analytics from cycle_expense_summary_view and itemized input logs</p>
       </div>
       <button type="button" id="add-expense-btn" class="btn btn-primary btn-sm" onclick="openExpenseModal()">
-        + Record Expense
+        + <span data-i18n="record_expense">Record Expense</span>
       </button>
     </div>
 
@@ -89,8 +118,8 @@
       <!-- Donut Chart Card -->
       <div class="chart-card" style="margin-bottom:0;">
         <div class="chart-title">
-          <span>🍩 Spend by Category</span>
-          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">Cycle summary</span>
+          <span>🍩 <span data-i18n="spend_by_category">Spend by Category</span></span>
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;" data-i18n="cycle_summary">Cycle summary</span>
         </div>
         <div class="chart-wrapper" style="height: 240px; display: flex; align-items: center; justify-content: center;">
           <div id="cycle-expense-empty-chart" style="display:none; flex-direction:column; align-items:center; color:var(--text-muted); font-size:0.85rem; text-align:center;">
@@ -107,11 +136,11 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Category</th>
-                <th>Amount</th>
-                <th>Notes</th>
-                <th>Action</th>
+                <th data-i18n="date">Date</th>
+                <th data-i18n="category">Category</th>
+                <th data-i18n="amount">Amount</th>
+                <th data-i18n="notes">Notes</th>
+                <th data-i18n="action">Action</th>
               </tr>
             </thead>
             <tbody id="expenses-tbody">
@@ -126,11 +155,24 @@
       </div>
     </div>
 
+    <!-- Clear Close-Cycle Section (Active Cycles) -->
+    <div id="inline-close-cycle-section" class="card" style="display:none; margin-top:2rem; border:1.5px solid var(--border); padding:1.5rem; background:var(--surface);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+        <div>
+          <h3 style="font-size:1.15rem; font-weight:700; color:var(--ink); margin:0;">🔒 <span data-i18n="close_cycle">Close Crop Cycle</span></h3>
+          <p style="font-size:0.875rem; color:var(--muted); margin:0.25rem 0 0 0;" data-i18n="close_cycle_desc">Record final harvest yield and revenue to calculate overall plot profitability and complete this cycle.</p>
+        </div>
+        <button type="button" class="btn btn-danger" onclick="openCloseModal()">
+          🔒 <span data-i18n="complete_and_close_cycle">Complete & Close Cycle</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Cycle Status Log Section -->
     <div class="section-header" style="margin-top:2rem;">
       <div>
-        <h2 class="section-title">📜 Status Audit Log</h2>
-        <p class="section-subtitle">Audit trail of status transitions from crop_cycle_log</p>
+        <h2 class="section-title">📜 <span data-i18n="status_audit_log">Status Audit Log</span></h2>
+        <p class="section-subtitle" data-i18n="status_audit_subtitle">Audit trail of status transitions from crop_cycle_log</p>
       </div>
     </div>
 
@@ -139,10 +181,10 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Log ID</th>
-              <th>Previous Status</th>
-              <th>New Status</th>
-              <th>Timestamp</th>
+              <th data-i18n="log_id">Log ID</th>
+              <th data-i18n="prev_status">Previous Status</th>
+              <th data-i18n="new_status">New Status</th>
+              <th data-i18n="timestamp">Timestamp</th>
             </tr>
           </thead>
           <tbody id="log-tbody">
@@ -247,10 +289,11 @@
   <script src="/static/js/api.js"></script>
   <script>
     let currentCycleId = null;
+    let currentCycleData = null;
     let cycleExpenseChartInstance = null;
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      if (!UI.requireAuth()) return;
+    async function initCycleDetail() {
+      if (!(await UI.requireAuth())) return;
       UI.renderNavbar("dashboard");
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -268,14 +311,27 @@
       await loadCalendar();
       await loadExpenses();
       await loadAuditLog();
+      await UI.applyTranslations();
+
+      window.addEventListener("agri_lang_changed", () => {
+        loadCycleDetails();
+      });
 
       document.getElementById("expense-form").addEventListener("submit", handleSaveExpense);
       document.getElementById("close-form").addEventListener("submit", handleCloseCycle);
-    });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initCycleDetail);
+    } else {
+      initCycleDetail();
+    }
 
     async function loadCycleDetails() {
       try {
         const c = await API.getCycle(currentCycleId);
+        currentCycleData = c;
+
         document.getElementById("cycle-title").textContent = `${UI.translateCrop(c.crop_name)} Cycle`;
         document.getElementById("cycle-subtitle").textContent = `Farm: ${c.farm_name || 'My Farm'} (Cycle #${c.cycle_id})`;
 
@@ -289,21 +345,132 @@
         document.getElementById("kpi-sown").textContent = UI.formatDate(c.sowing_date);
         document.getElementById("kpi-expected").textContent = UI.formatDate(c.expected_harvest);
 
+        // Harvest countdown calculation
+        if (c.expected_harvest) {
+          const expDate = new Date(c.expected_harvest);
+          const diffDays = Math.ceil((expDate - new Date()) / (1000 * 60 * 60 * 24));
+          const countdownEl = document.getElementById("kpi-countdown");
+          if (countdownEl) {
+            if (c.status === "Harvested") {
+              countdownEl.textContent = "Harvested";
+              countdownEl.style.color = "var(--accent-gold)";
+            } else if (c.status === "Failed") {
+              countdownEl.textContent = "Closed (Failed)";
+              countdownEl.style.color = "var(--danger)";
+            } else if (diffDays > 0) {
+              countdownEl.textContent = `${diffDays} days left`;
+              countdownEl.style.color = "var(--primary)";
+            } else if (diffDays === 0) {
+              countdownEl.textContent = "Ready today!";
+              countdownEl.style.color = "var(--accent-gold)";
+            } else {
+              countdownEl.textContent = `${Math.abs(diffDays)}d overdue`;
+              countdownEl.style.color = "var(--danger)";
+            }
+          }
+        }
+
         if (c.yield_kg !== null && c.yield_kg !== undefined) {
           document.getElementById("kpi-yield").textContent = `${c.yield_kg} kg`;
         } else {
           document.getElementById("kpi-yield").textContent = "—";
         }
 
-        // Show/hide close button if active
+        // Show/hide close button & inline section if active
         const closeBtn = document.getElementById("open-close-modal-btn");
-        if (c.status === "Growing" || c.status === "Planned") {
-          closeBtn.style.display = "inline-flex";
-        } else {
-          closeBtn.style.display = "none";
-        }
+        const inlineCloseSec = document.getElementById("inline-close-cycle-section");
+        const isCycleActive = (c.status === "Growing" || c.status === "Planned");
+        if (closeBtn) closeBtn.style.display = isCycleActive ? "inline-flex" : "none";
+        if (inlineCloseSec) inlineCloseSec.style.display = isCycleActive ? "block" : "none";
+
+        // Load Fertilizer Plan for this cycle's farm and crop
+        await loadFertilizerPlan(c.farm_id, c.crop_id);
       } catch (err) {
         UI.showAlert("alert-container", "Error loading cycle details: " + err.message);
+      }
+    }
+
+    async function reloadFertilizerPlan() {
+      if (currentCycleData) {
+        await loadFertilizerPlan(currentCycleData.farm_id, currentCycleData.crop_id);
+      }
+    }
+
+    async function loadFertilizerPlan(farmId, cropId) {
+      const container = document.getElementById("cycle-fertilizer-container");
+      if (!container) return;
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">⏳</div>
+          <p>Calculating tailored nutrient dosages based on soil test...</p>
+        </div>
+      `;
+
+      try {
+        const res = await API.getFertilizerAdvice(farmId, { crop_id: cropId });
+        if (res.fertilizers && res.fertilizers.length > 0) {
+          container.innerHTML = `
+            <div style="margin-bottom:0.75rem; font-size:0.88rem; font-weight:600; color:#065f46; background:#ecfdf5; padding:0.5rem 0.75rem; border-radius:var(--radius-sm); border-left:3px solid #10b981;">
+              ✓ ${res.message || "Nutrient dosage plan calculated successfully"}
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Fertilizer</th>
+                    <th>Dosage / Acre</th>
+                    <th>Farm Requirement</th>
+                    <th>Est. Cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${res.fertilizers.map((f) => `
+                    <tr>
+                      <td><strong>${f.fertilizer}</strong></td>
+                      <td>${f.kg_per_acre} kg</td>
+                      <td style="font-weight:600; color:var(--primary-dark);">${f.kg_for_farm} kg</td>
+                      <td style="font-weight:700; color:var(--accent);">${UI.formatCurrency(f.estimated_cost)}</td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            <div class="empty-state" style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-md); padding:1.5rem; text-align:center;">
+              <div style="font-size:2rem; margin-bottom:0.5rem;">🌿</div>
+              <h4 style="color:#166534; font-weight:700; margin-bottom:0.35rem;">Soil Already Meets This Crop's Needs</h4>
+              <p style="color:#15803d; font-size:0.9rem; margin-bottom:0;">
+                ${res.message || "Soil nutrient levels are sufficient. No additional chemical fertilizer is needed."}
+              </p>
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.error("Fertilizer plan error on cycle detail:", err);
+        UI.showToast(err.message || "Failed to load fertilizer plan", "danger");
+
+        const msgLower = (err.message || "").toLowerCase();
+        if (msgLower.includes("no soil test")) {
+          container.innerHTML = `
+            <div class="empty-state" style="background:#fffbeb; border:1px solid #fef3c7; border-radius:var(--radius-md); padding:1.5rem; text-align:center;">
+              <div style="font-size:2rem; margin-bottom:0.5rem;">🧪</div>
+              <h4 style="color:#92400e; font-weight:700; margin-bottom:0.35rem;">No Soil Test Yet</h4>
+              <p style="color:#b45309; font-size:0.88rem; margin-bottom:1rem;">
+                No soil test record found for this farm. Record a soil test first to generate a tailored fertilizer plan.
+              </p>
+              <a href="/ui/farms" class="btn btn-primary btn-sm">+ Record Soil Test on Farms Page</a>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            <div class="empty-state" style="color:var(--danger); background:#fef2f2; border:1px solid #fecaca; border-radius:var(--radius-md); padding:1.5rem; text-align:center;">
+              <p style="font-weight:600; margin-bottom:0.5rem;">Could not load fertilizer plan</p>
+              <p style="font-size:0.85rem; margin-bottom:0;">${err.message || "An unexpected error occurred."}</p>
+            </div>
+          `;
+        }
       }
     }
 
@@ -482,36 +649,37 @@
         }
 
         container.innerHTML = `
-          <div class="timeline">
-            ${stages.map((s) => {
-              const statusClass = (s.stage_status || "upcoming").toLowerCase();
-              let badgeHtml = "";
-              if (s.stage_status === "Done") {
-                badgeHtml = `<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700;">✓ Done</span>`;
-              } else if (s.stage_status === "Current") {
-                badgeHtml = `<span class="badge badge-growing" style="font-weight:700;">📍 Current Stage</span>`;
-              } else {
-                badgeHtml = `<span class="badge" style="background:#f1f5f9; color:#64748b; font-weight:600;">⏳ Upcoming</span>`;
-              }
+          <div class="stepper">
+            ${stages.map((s, idx) => {
+              const isDone = s.stage_status === "Done";
+              const isCurrent = s.stage_status === "Current";
+              const stepStateClass = isDone ? "step-done" : isCurrent ? "step-current" : "step-upcoming";
+              const iconSymbol = isDone ? "✓" : isCurrent ? "📍" : (idx + 1);
 
               return `
-                <div class="timeline-item ${statusClass}">
-                  <div class="timeline-content">
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.4rem;">
-                      <div style="font-weight:700; font-size:1.05rem; color:#0f172a;">
+                <div class="step-item ${stepStateClass}">
+                  <div class="step-indicator">
+                    <div class="step-icon">${iconSymbol}</div>
+                    ${idx < stages.length - 1 ? '<div class="step-line"></div>' : ''}
+                  </div>
+                  <div class="step-content">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.35rem;">
+                      <h4 class="step-title" style="margin:0; font-size:1.05rem; font-weight:700; color:var(--ink);">
                         ${s.stage_name}
-                        <span style="font-size:0.8rem; font-weight:500; color:var(--text-muted); margin-left:0.35rem;">
+                        <span style="font-size:0.8rem; font-weight:500; color:var(--muted); margin-left:0.35rem;">
                           (Day ${s.start_day} &ndash; ${s.end_day})
                         </span>
+                      </h4>
+                      <div>
+                        ${isDone ? `<span class="badge" style="background:var(--primary-subtle); color:var(--primary); font-weight:700;">✓ Done</span>` :
+                          isCurrent ? `<span class="badge badge-growing" style="font-weight:700;">📍 Current Stage</span>` :
+                          `<span class="badge" style="background:var(--surface-alt); color:var(--muted); font-weight:600;">⏳ Upcoming</span>`}
                       </div>
-                      <div>${badgeHtml}</div>
                     </div>
-
-                    <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.5rem;">
+                    <div style="font-size:0.82rem; color:var(--muted); margin-bottom:0.5rem;">
                       📅 Window: <strong>${UI.formatDate(s.start_date)}</strong> &ndash; <strong>${UI.formatDate(s.end_date)}</strong>
                     </div>
-
-                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-sm); padding:0.6rem 0.85rem; font-size:0.86rem; color:#1e293b;">
+                    <div style="background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--radius-sm); padding:0.65rem 0.85rem; font-size:0.86rem; color:var(--ink);">
                       📋 <strong>Agronomic Task:</strong> ${s.task || 'Monitor field conditions and crop vigor.'}
                     </div>
                   </div>

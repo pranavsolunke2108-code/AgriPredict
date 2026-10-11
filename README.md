@@ -16,6 +16,7 @@ Built with **FastAPI**, **MySQL 8.x (InnoDB)**, raw parameterized SQL queries us
 - [Running the Program](#running-the-program)
 - [Creating an Administrator](#creating-an-administrator)
 - [One-Minute Demo Seeder (`seed_demo.py`)](#one-minute-demo-seeder-seed_demopy)
+- [UI and Design System](#-ui-and-design-system)
 - [Web Frontend UI Pages](#web-frontend-ui-pages)
 - [Database Objects Catalog](#database-objects-catalog)
   - [Tables (16)](#tables-16)
@@ -43,7 +44,7 @@ Built with **FastAPI**, **MySQL 8.x (InnoDB)**, raw parameterized SQL queries us
 - **Frontend**: Clean, lightweight, responsive vanilla HTML5, CSS3, and JavaScript with [Chart.js](https://www.chartjs.org/) for data visualization
 - **Internationalization (i18n)**: English, Marathi, Hindi with database dictionary fallback to English and `crop_localized_view`
 - **Validation**: Pydantic v2 schemas with custom validators
-- **Testing**: `pytest` and `httpx` with 57 comprehensive automated tests
+- **Testing**: `pytest` and `httpx` with 61 comprehensive automated tests
 
 ---
 
@@ -203,14 +204,22 @@ Seed the complete showcase dataset (demo farmer, 2 farms, soil tests, 30 days of
 python seed_demo.py
 ```
 
-### 3. Start the Web Server
+### 3. Import Multilingual Translations (Optional / Complete Fix)
+To import all 242 clean Devanagari UI keys (English, Marathi, Hindi) and overwrite any previously corrupted translation rows:
+
+```cmd
+mysql -u root -p --default-character-set=utf8mb4 agripredict -e "source d:\Projects\Personal\AgriPredict\agripredict_i18n_extra.sql"
+```
+
+### 4. Start the Web Server
 Launch the FastAPI ASGI application with live reloading:
 
 ```bash
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-### 4. Access the Application
+### 5. Access the Application
+- **Public Home Page**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/) *(Interactive landing page with dynamic time-of-day sky, URL testing override `?sky=dawn|day|dusk|night`, animated SVG field scene, Try-it-now quick crop sandbox, sowing season recommendations, and stats)*
 - **Farmer & Demo Dashboard**: [http://127.0.0.1:8000/ui/dashboard](http://127.0.0.1:8000/ui/dashboard)
 - **Login Screen**: [http://127.0.0.1:8000/ui/login](http://127.0.0.1:8000/ui/login)
   - **Demo Farmer Credentials**: Phone `9876543210` / Password `Demo@1234`
@@ -250,15 +259,83 @@ The `seed_demo.py` script enables immediate presentation and evaluation of all A
 
 ---
 
-## 🌐 Web Frontend UI Pages
+## 🎨 UI and Design System
+
+AgriPredict features an **"Earthy Modern, Farmer-First"** frontend design system engineered specifically for rural usability, outdoor sunlight legibility, and smooth performance on low-end mobile hardware.
+
+### Design Principles & Philosophy
+- **Palette**: Warm cream (`#FBF8F1`) and forest green (`#2F7D4F`) with harvest terracotta and gold accents—warm, trustworthy, and distinctly agricultural.
+- **Sunlight Readability**: High contrast ratio ($\ge 4.5:1$) across all typography and data controls; crisp solid surfaces without blurry glassmorphism that degrades contrast or slows down budget phones.
+- **Farmer Touch Usability**: All primary buttons and interactive elements meet or exceed touch target requirements ($\ge 48\text{px}$ height and width).
+- **Multilingual Native Typography**: Native Devanagari typography using Google Font **Noto Sans Devanagari** paired with **Inter**, ensuring clean rendering for Marathi (MR) and Hindi (HI).
+- **Responsive App Shell**:
+  - **Desktop ($\ge 1024\text{px}$)**: Fixed 250px left sidebar with branding, quick links, active season badge, and farmer profile footer.
+  - **Tablet ($768\text{px}$ - $1023\text{px}$)**: Fluid grid with collapsible sidebar.
+  - **Mobile ($\le 767\text{px}$, optimized for $360\text{px}$ Android)**: Fixed bottom tab bar (`Dashboard`, `Farms`, `Cycles`, `Alerts`, `Prices`) with sticky top utility header for theme toggle and language switching.
+
+### Design Tokens (`static/css/theme.css`)
+Centralized CSS custom properties define the complete visual token set:
+- **Light Theme**: `--bg: #FBF8F1`, `--surface: #FFFFFF`, `--ink: #1C2826`, `--muted: #5B6B64`, `--primary: #2F7D4F`, `--primary-hover: #256640`.
+- **Dark Theme**: `--bg: #0F1A14`, `--surface: #18261E`, `--ink: #EAF0EC`, `--muted: #95A89E`, `--primary: #4EA371`, `--primary-hover: #60B784`.
+- **Seasonal Accents**:
+  - `Kharif`: `--season-kharif: #2F7D4F` (Monsoon green)
+  - `Rabi`: `--season-rabi: #C97A3E` (Winter harvest gold)
+  - `Zaid`: `--season-zaid: #D9534F` (Summer warm terracotta)
+  - `Annual`: `--season-annual: #3B7A8C` (Perennial blue)
+- **Status & Alerts**: Success (`#2E7D32`), Warning (`#D97706`), Danger (`#C62828`), Info (`#0284C7`).
+
+### Restyled Pages & Components
+1. **Farms Grid (`/ui/farms`)**:
+   - Responsive card grid displaying plot size, soil type, and irrigation chips.
+   - SVG contour map thumbnail with GPS coordinate tag (or styled placeholder when coordinates are pending).
+   - Five rapid-action buttons: *Recommend*, *Soil Test*, *Fertilizer Plan*, *Weather*, and *What to Grow Next*.
+2. **Crop Recommendations Modal**:
+   - Ranked result cards featuring a circular SVG suitability percentage gauge.
+   - Localized crop name with emoji badges.
+   - Horizontal multi-factor breakdown bars for pH, temperature, humidity, rainfall, N, P, and K.
+   - Economic projections (expected yield, gross revenue, cultivation costs, net profit) with *Fertilizer Plan* and *Start This Crop* actions.
+3. **Crop Cycle Details (`/ui/cycle-detail`)**:
+   - Real-time **Growth Stages Stepper Timeline** with *Done*, *Current*, and *Upcoming* state badges and task lists.
+   - Harvest Countdown KPI card with overdue warnings.
+   - Tailored **Fertilizer Plan** card with calculated nutrient dosages (Urea, DAP, MOP).
+   - **Spend by Category** Chart.js donut chart alongside itemized expenses table.
+   - Prominent **Close Crop Cycle** action card for recording final yield and market revenue.
+4. **Alerts Center (`/ui/alerts`)**:
+   - Interactive filter chips (*All Types*, *Unread Only*, *Rain*, *Heat*, *Frost*, *Drought*, *Task*, *Price*).
+   - Distinct colored icon avatars per alert category with terracotta left-border highlight for unread items.
+   - Batch *Mark All as Read* and individual resolution buttons.
+5. **Forms & Modals**:
+   - Single-column flow on mobile viewports ($\le 480\text{px}$).
+   - High-contrast labels positioned cleanly above inputs with contextual helper hints (acceptable ranges, units).
+   - Inline feedback and error summaries.
+   - Full-width large primary buttons with animated spinner loading states on submit.
+6. **Authentication (`/ui/login`, `/ui/register`)**:
+   - Desktop split layout: left agricultural hero illustration panel + right clean card form.
+   - Mobile single-column fluid card layout.
+7. **Admin Control Center (`/ui/admin`) & Mandi Prices (`/ui/prices`)**:
+   - Mobile horizontal scroll wrapper (`.table-wrapper`) preventing layout breakage.
+   - Sticky table headers and alternating zebra row striping.
+8. **Public Home Page (`/`)**:
+   - Pure tokenized styling seamlessly matching the application design tokens.
+   - Retains dynamic time-of-day sky with testing URL override (`?sky=dawn|day|dusk|night`), dark text scrim for high contrast, animated SVG field scene, and synchronized "Try it now" sandbox.
+9. **Skeletons & Friendly Empty States**:
+   - Shimmering loading skeletons for all async data cards and tables.
+   - Descriptive empty states with illustrative icons and immediate call-to-action buttons.
+
+---
+
+## 🌐 Web Frontend UI Pages & Security Guard
+
+AgriPredict features an enterprise-grade client-and-server authentication guard that prevents unauthenticated flashing of empty content or placeholder figures (`₹0.00`). All protected pages employ CSS anti-flash shielding (`body.auth-protected { visibility: hidden; }`) until asynchronous session validation (`GET /me`) passes. Any expired or missing token immediately triggers an automatic redirection to `/ui/login?next=<path>` with strict same-origin sanitization (blocking external protocol and open-redirect vectors).
 
 | URL Route | Page Title | Key Capabilities |
 |---|---|---|
-| `/ui/login` | Login | Phone/email authentication, JWT session token storage, loads farmer language preference. |
-| `/ui/register` | Register | Farmer registration with district, village, and default language. |
-| `/ui/dashboard` | Dashboard | KPI cards (revenue, expenses, net profit), Chart.js profit bar chart, expense category doughnut chart, active crop cards with progress bar and current stage, paginated harvest history table. |
-| `/ui/farms` | My Farms | Add/edit farms, record soil tests, sync Open-Meteo weather, generate crop recommendations with suitability breakdowns, view fertilizer plans, and access rotation advice. |
-| `/ui/cycle-detail?id={id}` | Cycle Details | Real-time cycle tracking, crop calendar timeline, input expenses CRUD, category expense breakdown doughnut chart, and close cycle modal (Harvested/Failed). |
+| `/` | Public Home Page | Public landing page with time-of-day sky gradient (supports `?sky=dawn|day|dusk|night` testing override), dark text scrim for high contrast, animated SVG field scene, "Try it now" sandbox with synchronized sliders, top-3 crop recommendations, "Sowing now" cards, aggregate statistics counters, features grid, how-it-works strip, sample mandi rates, and dynamic auth-aware header with desktop and mobile drawer navigation. |
+| `/ui/login` | Login | Phone/email authentication, JWT session token storage, cookie persistence, and safe `?next=` redirection. |
+| `/ui/register` | Register | Farmer registration with district, village, default language preference, and preservation of `?next=` redirect path. |
+| `/ui/dashboard` | Dashboard | Protected overview with KPI cards, Chart.js profit & expense breakdown charts, dynamic Current Status cards (showing crop, farm, stage progress, tasks, days since sowing, expected harvest date, and days to harvest), and a unified in-page **Start New Cycle** modal (no navigation). |
+| `/ui/farms` | My Farms | Add/edit farms, record soil tests, sync Open-Meteo weather, generate crop recommendations with 1-decimal scores, interactive **Fertilizer Plan** modals with gap analysis, and rotation advice. |
+| `/ui/cycle-detail?id={id}` | Cycle Details | Real-time cycle tracking with an interactive **Crop Calendar Timeline** (Done, Current, Upcoming badges), dedicated **Fertilizer Plan** section, input expense tracking, and close cycle modal. |
 | `/ui/alerts` | Alerts Center | Heavy rain, extreme heat, stage task, and price alerts with unread badge counter and mark-as-read toggles. |
 | `/ui/prices` | Mandi Prices | APMC commodity market rates across Maharashtra districts, 90-day historical trend line charts, and crop profitability estimations. |
 | `/ui/admin` | Admin Panel | Master data CRUD (Crops, Growth Stages, Fertilizers, Rotation Rules), user activation toggle, audit log viewer, and bulk CSV price upload. |
@@ -328,8 +405,20 @@ AgriPredict leverages advanced MySQL DBMS capabilities across **16 tables, 7 vie
 
 ## 📡 API Endpoints Reference
 
-### Health & General
-- `GET /health`: Database connection check (`status: healthy`, `database: connected`).
+### Public Endpoints (No Authentication Required)
+- `GET /`: Serves public home page (`static/index.html`) or API JSON metadata if requested via `Accept: application/json`.
+- `POST /public/quick-recommend`: Instant top-3 crop recommendations without saving data:
+  - Executes parameterized `CALL quick_recommend(...)` stored procedure.
+  - Server-side range validation (pH 0-14, N/P/K >= 0, Temp -10 to 60°C, Humidity 0-100%, Rain >= 0).
+  - Enforces IP-based rate limiting of 20 requests per minute.
+  - Rounds all suitability and nutrient scores to 1 decimal place.
+  - Localizes crop names to requested language (`en`, `mr`, `hi`).
+  - Automatically maps procedure errors (SQLSTATE 45000) to HTTP 400 Bad Request.
+- `GET /public/season`: Returns current agricultural season (via `get_season(CURDATE())`) and crops suitable for sowing now (season crops + Annual crops) with localized names.
+- `GET /public/stats`: Returns aggregated platform counters (`crops_supported`, `languages_supported`, `recommendations_made`) with complete privacy protection (no personal farmer data).
+
+### Health & Internationalization (i18n)
+- `GET /health`: Comprehensive health check including database connection pool status, Devanagari translation encoding integrity status (`valid` vs `corrupted`), and count of corrupted translation entries.
 - `GET /i18n/{lang}`: Multilingual dictionary (`en`, `mr`, `hi`) falling back to English for any missing keys.
 - `GET /crops/localized?lang=`: List crops with localized names via `crop_localized_view`.
 
@@ -339,12 +428,56 @@ AgriPredict leverages advanced MySQL DBMS capabilities across **16 tables, 7 vie
 - `GET /me` (or `/auth/me`): Fetch profile of logged-in farmer.
 - `PATCH /me/language`: Save farmer language preference in `farmers.language`.
 
+### Geolocation & Nominatim Proxies
+- `GET /geo/search?q=`: OpenStreetMap Nominatim search suggestions proxied for India (`countrycodes=in`, limit 5, in-memory caching, 1 req/sec rate limiting, proper User-Agent).
+- `GET /geo/reverse?lat=&lon=`: Reverse geocoding of latitude and longitude into human-readable location labels with soft warning for coordinates outside India (expected lat 6-38, lon 68-98).
+- `PATCH /me/address`: Update farmer profile's `district` and `village` directly from geocoded location.
+
 ### Farm Management
-- `POST /farms`: Create a farm plot with coordinates, soil type, and irrigation.
-- `GET /farms`: List all farms owned by the logged-in farmer.
+- `POST /farms`: Create a farm plot with location label, coordinates, soil type, and irrigation.
+- `GET /farms`: List all farms owned by the logged-in farmer (includes `location_label`).
 - `GET /farms/{farm_id}`: Fetch single farm details.
-- `PUT /farms/{farm_id}`: Update farm parameters.
+- `PUT /farms/{farm_id}`: Update farm parameters (including `location_label`).
 - `DELETE /farms/{farm_id}`: Delete farm (cascades to tests, weather, cycles, expenses).
+
+---
+
+## 🗺️ Easy Location Selection & Geocoding
+
+AgriPredict replaces manual latitude and longitude entry with an intuitive location selection workflow in Add/Edit Farm:
+1. **Interactive Leaflet Map**: Uses OpenStreetMap tiles with attribution and a draggable pin. Clicking the map or dragging the pin updates coordinates and triggers automatic reverse-geocoding into a human-readable `location_label` (e.g. *"Pune, Maharashtra"*).
+2. **"Use My Current Location"**: One-click browser geolocation (`navigator.geolocation`) with friendly error handling for permission denials, unavailable GPS, or timeouts.
+3. **Village/Town/City Autocomplete Search**: Search box debounced against backend proxy `GET /geo/search?q=` with instant dropdown suggestions.
+4. **Nominatim Usage Policy Compliance**: Backend proxies in `app/routers/geo.py` enforce strict compliance with OpenStreetMap's Nominatim usage policy:
+   - Custom User-Agent header with contact info (`AgriPredict/1.0 (contact: admin@agripredict.in)`).
+   - Thread-safe rate limiting ensuring a maximum of 1 request per second.
+   - In-memory result caching for both search queries and reverse-geocoded coordinates.
+   - Geographically restricted to India (`countrycodes=in`, limit 5).
+5. **Read-Only Auto-Filled Coordinates with Manual Toggle**: Latitude and longitude fields are auto-filled and read-only by default, with an *"Enter coordinates manually"* toggle allowing direct numerical adjustments.
+6. **India Bounds Validation & Soft Warning**: Validates coordinates and presents a soft warning banner if selected coordinates fall outside India's standard boundary (lat 6–38, lon 68–98).
+7. **Farm Card Display**: Shows `location_label` prominently on each farm card, keeping raw GPS coordinates as small secondary text. Existing legacy farms without a label gracefully fallback to displaying GPS.
+8. **Profile Address Autofill Prompt**: If the farmer's registered profile lacks a district or village, the modal detects candidate values from the geocoded address and offers a 1-click prompt to save them to their profile (`PATCH /me/address`).
+
+---
+
+## 🧪 Running Automated Tests
+
+Run the complete test suite (71 automated tests covering all phases, security models, bug fixes, location selection, and i18n features):
+
+```bash
+.venv\Scripts\pytest -v
+```
+
+### Test Coverage Highlights:
+- **`test_geo_and_location.py`** (10 tests): OpenStreetMap Nominatim search and reverse geocode proxies with mocked HTTP, in-memory result caching, rate limiting, India bounds validation and soft warnings, global coordinate rejection, farm `location_label` persistence across CRUD operations, and `PATCH /me/address` profile updates.
+- **`test_auth_and_farms.py`** (13 tests): Farmer registration, login via phone or email, JWT validation, admin role checks, and farm ownership isolation.
+- **`test_bugfixes.py`** (4 tests): Wheat crop calendar (5 growth stages, 1 Current stage), harvest date calculation on status cards, fertilizer advice for low-NPK soil, protected page redirects when unauthenticated, safe `next` redirection with external URL rejection, and recommendation score 1-decimal rounding.
+- **`test_create_admin.py`** (2 tests): Interactive prompts and non-interactive CLI flags for admin creation.
+- **`test_phase2_soil_weather_recommend.py`** (8 tests): Soil test CRUD, Open-Meteo weather caching and upserts, and crop recommendation stored procedure execution.
+- **`test_phase3_dashboard_cycles.py`** (8 tests): Crop cycle lifecycle, one active cycle trigger enforcement, expenses CRUD, close cycle flow, and audit trail logging.
+- **`test_phase4_advisory_alerts.py`** (11 tests): Fertilizer dosage calculation, succession rotation rules, crop calendar timelines, and automated trigger weather alerts with `dedupe_key`.
+- **`test_phase5_market_admin.py`** (9 tests): Admin RBAC, master catalog CRUD, HTTP 409 conflict protection, trigger-based audit logging with `@app_user`, and CSV bulk price upload.
+- **`test_phase6_security_i18n.py`** (6 tests): Health endpoint check, `GET /i18n/{lang}` dictionary with English fallback, `PATCH /me/language` persistence, invalid language rejection, and `GET /crops/localized` using `crop_localized_view`.
 
 ### Soil & Weather Telemetry
 - `POST /farms/{farm_id}/soil-tests`: Record soil test (N, P, K, pH 0-14, moisture 0-100%, organic carbon).
@@ -431,24 +564,7 @@ mysql -u root -p agripredict < backups/agripredict_YYYYMMDD_HHMMSS.sql
 
 ---
 
-## 🧪 Running Automated Tests
 
-Run the complete test suite (57 automated tests covering all phases, security models, and i18n features):
-
-```bash
-.venv\Scripts\pytest -v
-```
-
-### Test Coverage Highlights:
-- **`test_auth_and_farms.py`** (13 tests): Farmer registration, login via phone or email, JWT validation, admin role checks, and farm ownership isolation.
-- **`test_create_admin.py`** (2 tests): Interactive prompts and non-interactive CLI flags for admin creation.
-- **`test_phase2_soil_weather_recommend.py`** (8 tests): Soil test CRUD, Open-Meteo weather caching and upserts, and crop recommendation stored procedure execution.
-- **`test_phase3_dashboard_cycles.py`** (8 tests): Crop cycle lifecycle, one active cycle trigger enforcement, expenses CRUD, close cycle flow, and audit trail logging.
-- **`test_phase4_advisory_alerts.py`** (11 tests): Fertilizer dosage calculation, succession rotation rules, crop calendar timelines, and automated trigger weather alerts with `dedupe_key`.
-- **`test_phase5_market_admin.py`** (9 tests): Admin RBAC, master catalog CRUD, HTTP 409 conflict protection, trigger-based audit logging with `@app_user`, and CSV bulk price upload.
-- **`test_phase6_security_i18n.py`** (6 tests): Health endpoint check, `GET /i18n/{lang}` dictionary with English fallback, `PATCH /me/language` persistence, invalid language rejection, and `GET /crops/localized` using `crop_localized_view`.
-
----
 
 ## ⚠️ Known Limitations
 

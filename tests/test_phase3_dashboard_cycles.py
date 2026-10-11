@@ -333,19 +333,21 @@ def test_frontend_ui_pages(client):
     assert res_reg.status_code == 200
     assert "Create Account" in res_reg.text
 
-    res_dash = client.get("/ui/dashboard")
+    headers, _ = get_farmer_auth(client, "9876500050", "UI Farmer")
+
+    res_dash = client.get("/ui/dashboard", headers=headers)
     assert res_dash.status_code == 200
     assert "Farming Overview" in res_dash.text
 
-    res_farms = client.get("/ui/farms")
+    res_farms = client.get("/ui/farms", headers=headers)
     assert res_farms.status_code == 200
     assert "My Farms" in res_farms.text
 
-    res_cycle = client.get("/ui/cycle-detail")
+    res_cycle = client.get("/ui/cycle-detail", headers=headers)
     assert res_cycle.status_code == 200
     assert "Crop Cycle Details" in res_cycle.text
 
-    res_alerts = client.get("/ui/alerts")
+    res_alerts = client.get("/ui/alerts", headers=headers)
     assert res_alerts.status_code == 200
     assert "Field Alerts" in res_alerts.text
 

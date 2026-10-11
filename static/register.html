@@ -4,83 +4,252 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register - AgriPredict</title>
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/css/theme.css">
+  <style>
+    .auth-split-wrapper {
+      min-height: 100vh;
+      display: flex;
+      width: 100%;
+    }
+    .auth-hero-side {
+      display: none;
+    }
+    @media (min-width: 900px) {
+      .auth-hero-side {
+        flex: 1;
+        background: linear-gradient(145deg, #1A4D2E 0%, #2F7D4F 60%, #173822 100%);
+        color: #FFFFFF;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 3.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+    }
+    .auth-form-side {
+      flex: 1.1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1.5rem;
+      background-color: var(--bg);
+    }
+    .auth-card-clean {
+      width: 100%;
+      max-width: 500px;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 2.25rem 2rem;
+      box-shadow: var(--shadow-md);
+    }
+    .form-two-col {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    @media (min-width: 600px) {
+      .form-two-col {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="auth-wrapper">
-    <div class="auth-card" style="max-width: 480px;">
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
-        <div class="lang-switch">
-          <button type="button" class="lang-btn active" data-lang="en" onclick="UI.switchLanguage('en')">EN</button>
-          <button type="button" class="lang-btn" data-lang="mr" onclick="UI.switchLanguage('mr')">MR</button>
-          <button type="button" class="lang-btn" data-lang="hi" onclick="UI.switchLanguage('hi')">HI</button>
+  <div class="auth-split-wrapper">
+    <!-- Desktop Hero Side -->
+    <div class="auth-hero-side">
+      <div>
+        <div style="display:flex; align-items:center; gap:0.6rem; font-size:1.6rem; font-weight:800; letter-spacing:-0.5px;">
+          <span>🌱</span> <span>AgriPredict</span>
+        </div>
+        <div style="font-size:0.9rem; opacity:0.85; margin-top:0.25rem;">
+          Open Agronomic Intelligence for Indian Farmers
         </div>
       </div>
 
-      <div class="auth-header">
-        <div style="font-size: 2.4rem; margin-bottom: 0.25rem;">🌾</div>
-        <h1 class="auth-title">Create Account</h1>
-        <p class="auth-subtitle" data-i18n="register">Register for AgriPredict Smart Farming</p>
+      <div style="margin: 2.5rem 0;">
+        <div style="font-size: 2.75rem; margin-bottom: 1.25rem;">🌾 📊 🌦️</div>
+        <h2 style="font-size: 2rem; font-weight: 800; color: #FFFFFF; line-height: 1.25; margin-bottom: 1rem;">
+          Join Thousands of Farmers Making Smarter Crop Choices.
+        </h2>
+        <p style="font-size: 1.05rem; opacity: 0.9; line-height: 1.6;">
+          Sign up free to track soil tests, get crop rotation advice, receive weather alerts, and plan your farming season.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.85rem; margin-top: 2rem;">
+          <div style="display:flex; align-items:center; gap:0.65rem; font-size:0.95rem;">
+            <span style="background:rgba(255,255,255,0.2); width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">✓</span>
+            <span>Free and open agronomic scoring</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.65rem; font-size:0.95rem;">
+            <span style="background:rgba(255,255,255,0.2); width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">✓</span>
+            <span>Automatic location lookup & weather telemetry</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.65rem; font-size:0.95rem;">
+            <span style="background:rgba(255,255,255,0.2); width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">✓</span>
+            <span>Local languages: English, Marathi, Hindi</span>
+          </div>
+        </div>
       </div>
 
-      <div id="alert-container"></div>
+      <div style="font-size: 0.82rem; opacity: 0.7;">
+        &copy; AgriPredict • Empowering Farmers with Science
+      </div>
+    </div>
 
-      <form id="register-form">
-        <div class="form-group">
-          <label class="form-label" for="name">Full Name *</label>
-          <input type="text" id="name" class="form-control" placeholder="e.g. Ramesh Patil" required minlength="2">
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="phone">Mobile Number *</label>
-            <input type="tel" id="phone" class="form-control" placeholder="10-digit mobile" required minlength="10">
+    <!-- Form Side -->
+    <div class="auth-form-side">
+      <div class="auth-card-clean">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <div style="display:flex; align-items:center; gap:0.4rem; font-weight:700; color:var(--primary); font-size:1.15rem;">
+            <span>🌱</span> <span>AgriPredict</span>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="email">Email Address</label>
-            <input type="email" id="email" class="form-control" placeholder="optional@domain.com">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="password">Password (min 6 characters) *</label>
-          <input type="password" id="password" class="form-control" placeholder="Create a secure password" required minlength="6">
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="district">District</label>
-            <input type="text" id="district" class="form-control" placeholder="e.g. Pune">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="village">Village</label>
-            <input type="text" id="village" class="form-control" placeholder="e.g. Baramati">
+          <div class="lang-switch">
+            <button type="button" class="lang-btn active" data-lang="en" onclick="UI.switchLanguage('en')">EN</button>
+            <button type="button" class="lang-btn" data-lang="mr" onclick="UI.switchLanguage('mr')">MR</button>
+            <button type="button" class="lang-btn" data-lang="hi" onclick="UI.switchLanguage('hi')">HI</button>
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="language">Preferred Language</label>
-          <select id="language" class="form-control">
-            <option value="en">English (en)</option>
-            <option value="mr">मराठी (mr)</option>
-            <option value="hi">हिंदी (hi)</option>
-          </select>
+        <div style="margin-bottom: 1.5rem;">
+          <h1 class="auth-title" style="font-size: var(--text-2xl); font-weight: 800; color: var(--ink); margin-bottom: 0.25rem;">
+            Create Account
+          </h1>
+          <p style="font-size: var(--text-sm); color: var(--muted);" data-i18n="register_sub">
+            Fill your farmer profile details to get started with AgriPredict.
+          </p>
         </div>
 
-        <button type="submit" id="reg-submit-btn" class="btn btn-primary btn-block" style="margin-top: 1.25rem;">
-          <span data-i18n="register">Register</span>
-        </button>
-      </form>
+        <div id="alert-container"></div>
 
-      <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
-        Already have an account? <a href="/ui/login" style="color: var(--primary); font-weight: 600;" data-i18n="login">Login</a>
+        <form id="register-form">
+          <div class="form-group">
+            <label class="form-label" for="name" data-i18n="full_name">
+              Full Name *
+            </label>
+            <input
+              type="text"
+              id="name"
+              class="form-control"
+              placeholder="e.g. Ramesh Patil"
+              data-i18n-placeholder="placeholder_name"
+              required
+              minlength="2"
+            >
+          </div>
+
+          <div class="form-two-col">
+            <div class="form-group">
+              <label class="form-label" for="phone" data-i18n="mobile_number">
+                Mobile Number *
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                class="form-control"
+                placeholder="10-digit mobile"
+                data-i18n-placeholder="placeholder_mobile"
+                required
+                minlength="10"
+              >
+              <span class="form-hint">Used for SMS alerts and login</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="email" data-i18n="email_address">
+                Email Address
+              </label>
+              <input
+                type="email"
+                id="email"
+                class="form-control"
+                placeholder="optional@domain.com"
+              >
+              <span class="form-hint">Optional</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password" data-i18n="password">
+              Password *
+            </label>
+            <input
+              type="password"
+              id="password"
+              class="form-control"
+              placeholder="Create a password"
+              data-i18n-placeholder="placeholder_create_password"
+              required
+              minlength="6"
+            >
+            <span class="form-hint">Minimum 6 characters</span>
+          </div>
+
+          <div class="form-two-col">
+            <div class="form-group">
+              <label class="form-label" for="district" data-i18n="district">
+                District
+              </label>
+              <input
+                type="text"
+                id="district"
+                class="form-control"
+                placeholder="e.g. Pune"
+                data-i18n-placeholder="placeholder_district"
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="village" data-i18n="village">
+                Village
+              </label>
+              <input
+                type="text"
+                id="village"
+                class="form-control"
+                placeholder="e.g. Baramati"
+                data-i18n-placeholder="placeholder_village"
+              >
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="language" data-i18n="preferred_language">
+              Preferred Language
+            </label>
+            <select id="language" class="form-control">
+              <option value="en">English (en)</option>
+              <option value="mr">मराठी (mr)</option>
+              <option value="hi">हिंदी (hi)</option>
+            </select>
+          </div>
+
+          <button type="submit" id="reg-submit-btn" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem;">
+            <span data-i18n="register">Register Account</span>
+          </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.5rem; font-size: var(--text-sm); color: var(--muted);">
+          <span data-i18n="already_have_account">Already have an account?</span>
+          <a href="/ui/login" style="color: var(--primary); font-weight: 700; margin-left: 0.25rem;" data-i18n="login">Login</a>
+        </div>
       </div>
     </div>
   </div>
 
   <script src="/static/js/api.js"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    function initRegister() {
+      const nextParam = new URLSearchParams(window.location.search).get("next");
+      if (nextParam) {
+        API.clearSession();
+        const loginLink = document.querySelector('a[href="/ui/login"]');
+        if (loginLink) loginLink.href = `/ui/login?next=${encodeURIComponent(nextParam)}`;
+      }
+
       UI.applyTranslations();
 
       const form = document.getElementById("register-form");
@@ -90,36 +259,40 @@
         e.preventDefault();
         UI.clearAlert("alert-container");
 
-        const payload = {
-          name: document.getElementById("name").value.trim(),
-          phone: document.getElementById("phone").value.trim(),
-          email: document.getElementById("email").value.trim() || null,
-          password: document.getElementById("password").value,
-          district: document.getElementById("district").value.trim() || null,
-          village: document.getElementById("village").value.trim() || null,
-          language: document.getElementById("language").value,
-        };
+        const name = document.getElementById("name").value.trim();
+        const phone = document.getElementById("phone").value.trim();
+        const email = document.getElementById("email").value.trim() || null;
+        const password = document.getElementById("password").value;
+        const district = document.getElementById("district").value.trim() || null;
+        const village = document.getElementById("village").value.trim() || null;
+        const language = document.getElementById("language").value;
 
         submitBtn.disabled = true;
         submitBtn.textContent = "Creating account...";
 
         try {
-          await API.register(payload);
-          // Automatically log in
-          const loginRes = await API.login(payload.phone, payload.password);
+          await API.register({ name, phone, email, password, district, village, language });
+          const loginRes = await API.login(phone, password);
           API.setToken(loginRes.access_token);
-          if (loginRes.farmer) {
-            API.setFarmer(loginRes.farmer);
-          }
-          window.location.href = "/ui/dashboard";
+          const farmerObj = loginRes.farmer || (await API.getMe());
+          API.setFarmer(farmerObj);
+          if (language) API.setLang(language);
+          window.location.href = UI.getSafeRedirectUrl("/ui/dashboard");
         } catch (err) {
-          UI.showAlert("alert-container", err.message || "Registration failed.");
+          UI.showAlert("alert-container", err.message || "Registration failed. Please check inputs.");
+        } finally {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = `<span data-i18n="register">Register</span>`;
+          submitBtn.innerHTML = `<span data-i18n="register">Register Account</span>`;
           UI.applyTranslations();
         }
       });
-    });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initRegister);
+    } else {
+      initRegister();
+    }
   </script>
 </body>
 </html>

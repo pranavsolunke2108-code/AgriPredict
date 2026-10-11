@@ -65,3 +65,28 @@ def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
         return payload
     except JWTError:
         return None
+
+
+def is_safe_redirect_url(url: Optional[str]) -> bool:
+    """Validate that a redirect target is a safe, same-site relative path.
+
+    Rejects external URLs (with schemes like http://, https://), protocol-relative URLs (//example.com),
+    and backslashes (\\example.com) that could lead to open redirection vulnerabilities.
+    """
+    if not url or not isinstance(url, str):
+        return False
+    # Must start with a single slash and not protocol-relative
+    if not url.startswith("/") or url.startswith("//"):
+        return False
+    # Disallow protocol schemes and backslashes
+    if "://" in url or "\\" in url:
+        return False
+    return True
+
+
+def get_safe_redirect_url(next_url: Optional[str], default: str = "/ui/dashboard") -> str:
+    """Return next_url if it is a safe same-site path, otherwise fallback to default."""
+    if next_url and is_safe_redirect_url(next_url):
+        return next_url
+    return default
+

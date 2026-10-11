@@ -35,6 +35,8 @@ def get_connection_pool() -> MySQLConnectionPool:
                 user=settings.DB_USER,
                 password=settings.DB_PASSWORD,
                 database=settings.DB_NAME,
+                charset="utf8mb4",
+                collation="utf8mb4_unicode_ci",
             )
         except mysql.connector.Error as err:
             logger.error("Failed to connect to MySQL database '%s': %s", settings.DB_NAME, err)
@@ -67,6 +69,8 @@ def get_migration_connection():
         user=settings.DB_MIGRATE_USER,
         password=settings.DB_MIGRATE_PASSWORD,
         database=settings.DB_NAME,
+        charset="utf8mb4",
+        collation="utf8mb4_unicode_ci",
     )
 
 

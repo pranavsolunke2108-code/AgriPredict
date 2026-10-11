@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 
@@ -105,6 +105,7 @@ class FarmCreateRequest(BaseModel):
     longitude: Optional[float] = Field(None, ge=-180.0, le=180.0, description="GPS longitude (-180 to 180)")
     soil_type: Optional[SoilType] = Field(None, description="Soil classification")
     irrigation: IrrigationType = Field("Rainfed", description="Primary irrigation source")
+    location_label: Optional[str] = Field(None, max_length=150, description="Readable location label e.g. Pune, Maharashtra")
 
 
 class FarmUpdateRequest(BaseModel):
@@ -115,6 +116,7 @@ class FarmUpdateRequest(BaseModel):
     longitude: Optional[float] = Field(None, ge=-180.0, le=180.0)
     soil_type: Optional[SoilType] = None
     irrigation: Optional[IrrigationType] = None
+    location_label: Optional[str] = Field(None, max_length=150)
 
 
 class FarmResponse(BaseModel):
@@ -127,6 +129,7 @@ class FarmResponse(BaseModel):
     longitude: Optional[float] = None
     soil_type: Optional[SoilType] = None
     irrigation: IrrigationType
+    location_label: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -140,6 +143,31 @@ class MessageResponse(BaseModel):
 class LanguageUpdateRequest(BaseModel):
     """Payload for PATCH /me/language."""
     language: LanguageType = Field(..., description="Preferred language: en, mr, or hi")
+
+
+class FarmerAddressUpdateRequest(BaseModel):
+    """Payload for PATCH /me/address."""
+    district: Optional[str] = Field(None, max_length=60, description="Farmer district")
+    village: Optional[str] = Field(None, max_length=80, description="Farmer village")
+
+
+class GeoSuggestion(BaseModel):
+    """Geocoding search suggestion."""
+    display_name: str
+    label: str
+    lat: float
+    lon: float
+    address: Optional[Dict[str, Any]] = None
+
+
+class GeoReverseResponse(BaseModel):
+    """Reverse geocoding response."""
+    display_name: str
+    label: str
+    lat: float
+    lon: float
+    address: Optional[Dict[str, Any]] = None
+    warning: Optional[str] = None
 
 
 # -----------------------------------------------------------------------------

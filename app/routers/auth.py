@@ -2,11 +2,12 @@
 
 import logging
 from typing import Any, Dict
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app import db
 from app.dependencies import get_current_farmer
 from app.schemas import (
+    FarmerAddressUpdateRequest,
     FarmerLoginRequest,
     FarmerRegisterRequest,
     FarmerResponse,
@@ -97,13 +98,13 @@ def register_farmer(payload: FarmerRegisterRequest):
     response_model=TokenResponse,
     summary="Farmer / Admin login",
 )
-def login(payload: FarmerLoginRequest):
+def login(payload: FarmerLoginRequest, response: Response):
     """Authenticate with phone or email and password.
 
     - Verifies credentials against bcrypt hash.
     - Rejects inactive accounts.
     - Updates farmers.last_login timestamp.
-    - Returns a signed JWT access token.
+    - Returns a signed JWT access token and sets agri_token cookie.
     """
     identifier = payload.identifier
 
@@ -143,6 +144,15 @@ def login(payload: FarmerLoginRequest):
     }
     access_token = create_access_token(token_payload)
 
+    # Set auth cookie for same-site browser navigation
+    response.set_cookie(
+        key="agri_token",
+        value=access_token,
+        path="/",
+        samesite="lax",
+        httponly=False,
+    )
+
     # Prepare farmer profile without password_hash
     farmer_profile = dict(farmer)
     farmer_profile.pop("password_hash", None)
@@ -152,6 +162,14 @@ def login(payload: FarmerLoginRequest):
         token_type="bearer",
         farmer=FarmerResponse.model_validate(farmer_profile),
     )
+
+
+@router.post("/logout", summary="Clear authentication session cookie")
+def logout_endpoint(response: Response):
+    """Clear the agri_token authentication cookie."""
+    response.delete_cookie("agri_token", path="/")
+    return {"message": "Logged out successfully"}
+
 
 
 @router.get(
@@ -190,3 +208,29 @@ def update_my_language(
         (farmer_id,),
     )
     return FarmerResponse.model_validate(updated_farmer or current_farmer)
+
+
+@router.patch(
+    "/me/address",
+    response_model=FarmerResponse,
+    summary="Update farmer district and village from location",
+)
+def update_my_address(
+    payload: FarmerAddressUpdateRequest,
+    current_farmer: Dict[str, Any] = Depends(get_current_farmer),
+):
+    """Save the farmer's district and village in farmers table."""
+    farmer_id = current_farmer["farmer_id"]
+    district = payload.district if payload.district is not None else current_farmer.get("district")
+    village = payload.village if payload.village is not None else current_farmer.get("village")
+    db.execute_update(
+        "UPDATE farmers SET district = %s, village = %s WHERE farmer_id = %s",
+        (district, village, farmer_id),
+    )
+    updated_farmer = db.fetch_one(
+        "SELECT farmer_id, name, phone, email, district, village, language, role, is_active, created_at, last_login "
+        "FROM farmers WHERE farmer_id = %s",
+        (farmer_id,),
+    )
+    return FarmerResponse.model_validate(updated_farmer or current_farmer)
+

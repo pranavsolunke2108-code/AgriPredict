@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Control Center - AgriPredict</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/theme.css">
   <style>
     .admin-container {
       max-width: 1280px;
@@ -23,18 +27,19 @@
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      background: #e0f2fe;
-      color: #0369a1;
+      background: var(--info-subtle);
+      color: var(--info-water);
       font-weight: 700;
       padding: 0.35rem 0.75rem;
-      border-radius: 9999px;
+      border-radius: var(--radius-full);
       font-size: 0.85rem;
+      border: 1px solid var(--info-water);
     }
     .admin-nav-tabs {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
-      background: #f1f5f9;
+      background: var(--surface-alt);
       padding: 0.35rem;
       border-radius: var(--radius-md);
       margin-bottom: 1.5rem;
@@ -50,17 +55,20 @@
       border-radius: var(--radius-sm);
       font-weight: 600;
       font-size: 0.88rem;
-      color: var(--text-muted);
+      color: var(--muted);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all var(--transition-fast);
+      min-height: 40px;
     }
     .admin-nav-tab:hover {
-      color: var(--text-main);
+      color: var(--ink);
+      background: var(--surface-hover);
     }
     .admin-nav-tab.active {
-      background: #ffffff;
+      background: var(--surface);
       color: var(--primary);
       box-shadow: var(--shadow-sm);
+      font-weight: 700;
     }
     .tab-pane {
       display: none;
@@ -107,9 +115,9 @@
       border-color: var(--primary);
       background: #f0fdf4;
     }
-  </style>
+</style>
 </head>
-<body>
+<body class="auth-protected">
   <div id="navbar-placeholder"></div>
 
   <!-- Access Denied Screen (if not admin) -->
@@ -661,8 +669,8 @@
     let globalCrops = [];
     let selectedCsvFile = null;
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      if (!UI.requireAuth()) return;
+    async function initAdmin() {
+      if (!(await UI.requireAuth())) return;
       UI.renderNavbar("admin");
 
       const farmer = API.getFarmer();
@@ -683,7 +691,13 @@
       await loadAdminPrices();
       await loadAdminUsers();
       await loadAdminAuditLog();
-    });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initAdmin);
+    } else {
+      initAdmin();
+    }
 
     function switchAdminTab(tabKey) {
       document.querySelectorAll(".admin-nav-tab").forEach(btn => btn.classList.remove("active"));

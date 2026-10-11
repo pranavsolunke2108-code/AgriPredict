@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriPredict - Smart Agriculture & AI Crop Advisory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/theme.css">
+  <style>
+    /* Public Home Page Specific Aesthetics & Interactive Styles */
+    :root {
+      --hero-height: 520px;
+    }
+
+    /* Sticky Header */
+    .landing-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      transition: all 0.25s ease;
+    }
+    .landing-header .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .landing-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      text-decoration: none;
+    }
+    .landing-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .landing-nav-links a {
+      color: var(--text-main);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: color 0.2s;
+    }
+    .landing-nav-links a:hover {
+      color: var(--primary);
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .btn-outline-login {
+      border: 1.5px solid var(--primary);
+      color: var(--primary);
+      background: transparent;
+      padding: 0.45rem 1rem;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-outline-login:hover {
+      background: var(--primary-bg);
+      color: var(--primary-dark);
+    }
+    .user-avatar-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-full);
+      padding: 0.25rem 0.75rem 0.25rem 0.35rem;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-main);
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .user-avatar-btn:hover {
+      background: #e2e8f0;
+    }
+    .user-avatar-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+    }
+
+    /* Hero Section with Dynamic Time-of-Day Sky & Animated SVG Field */
+    .hero-section {
+      position: relative;
+      overflow: hidden;
+      padding: 3.5rem 1.5rem 3rem 1.5rem;
+      transition: background 1s ease;
+      color: var(--hero-fg);
+    }
+
+    /* Time-of-day Sky Gradients using theme tokens */
+    .sky-dawn {
+      background: var(--sky-dawn);
+      color: var(--hero-fg);
+    }
+    .sky-day {
+      background: var(--sky-day);
+      color: var(--hero-fg);
+    }
+    .sky-dusk,
+    .sky-sunset {
+      background: var(--sky-dusk);
+      color: var(--hero-fg);
+    }
+    .sky-night {
+      background: var(--sky-night);
+      color: var(--hero-fg);
+    }
+
+    .hero-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      align-items: center;
+      gap: 2.5rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Dark scrim behind text column for 4.5:1+ body contrast and 3:1+ title contrast */
+    .hero-content {
+      max-width: 620px;
+      position: relative;
+      background: var(--hero-scrim);
+      padding: 1.5rem 2rem 1.5rem 1.25rem;
+      border-radius: var(--radius-lg);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      background: var(--hero-badge-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--hero-badge-border);
+      border-radius: var(--radius-full);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--hero-fg) !important;
+      margin-bottom: 1.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    .hero-title {
+      font-size: 2.85rem;
+      font-weight: 800;
+      line-height: 1.18;
+      margin-bottom: 1.25rem;
+      color: var(--hero-fg) !important;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero-subtitle {
+      font-size: 1.15rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+      color: var(--hero-fg-muted) !important;
+      font-weight: 400;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .hero-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    /* Primary CTA: Solid Green */
+    .btn-hero-primary {
+      background: var(--primary);
+      color: var(--primary-contrast);
+      padding: 0.85rem 1.85rem;
+      border-radius: var(--radius-md);
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+      transition: all var(--transition-normal);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-hero-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+    .btn-hero-primary:focus-visible {
+      outline: 3px solid var(--hero-fg);
+      outline-offset: 2px;
+    }
+
+    /* Secondary CTA: Outlined with semi-transparent dark fill & visible hover/focus */
+    .btn-hero-secondary {
+      background: var(--hero-btn-secondary-bg);
+      color: var(--hero-fg);
+      border: 1.5px solid var(--hero-btn-secondary-border);
+      padding: 0.85rem 1.65rem;
+      border-radius: var(--radius-md);
+      font-size: 1.05rem;
+      font-weight: 600;
+      text-decoration: none;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      transition: all var(--transition-normal);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+    .btn-hero-secondary:hover {
+      background: var(--hero-btn-secondary-hover-bg);
+      border-color: var(--hero-btn-secondary-hover-border);
+      color: var(--hero-fg);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    }
+    .btn-hero-secondary:focus-visible {
+      outline: 3px solid var(--hero-fg);
+      outline-offset: 2px;
+    }
+
+    /* Animated Field SVG Canvas */
+    .hero-scene-wrap {
+      width: 100%;
+      height: 380px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .field-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      filter: drop-shadow(0 15px 25px rgba(0,0,0,0.15));
+    }
+
+    /* CSS Animations for Scene Elements */
+    @keyframes swayStalk {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(6deg); }
+    }
+    @keyframes swayStalkAlt {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(-5deg); }
+    }
+    @keyframes driftCloud {
+      0% { transform: translateX(-40px); }
+      50% { transform: translateX(40px); }
+      100% { transform: translateX(-40px); }
+    }
+    @keyframes pulseSun {
+      0%, 100% { transform: scale(1); opacity: 0.95; }
+      50% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 25px rgba(253, 224, 71, 0.8)); }
+    }
+
+    .anim-stalk-1 { transform-origin: bottom center; animation: swayStalk 3.2s ease-in-out infinite; }
+    .anim-stalk-2 { transform-origin: bottom center; animation: swayStalkAlt 3.8s ease-in-out infinite; }
+    .anim-stalk-3 { transform-origin: bottom center; animation: swayStalk 2.8s ease-in-out infinite 0.5s; }
+    .anim-cloud-1 { animation: driftCloud 18s ease-in-out infinite; }
+    .anim-cloud-2 { animation: driftCloud 24s ease-in-out infinite reverse; }
+    .anim-sun { transform-origin: center; animation: pulseSun 4s ease-in-out infinite; }
+
+    /* Interactive "Try it now" Quick-Recommend Card */
+    .try-it-section {
+      padding: 3.5rem 1.5rem;
+      background: #f8fafc;
+    }
+    .section-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-headline {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .section-headline h2 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+    }
+    .section-headline p {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    .try-card {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+      padding: 2rem;
+    }
+    .sliders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .slider-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .slider-input-sync {
+      width: 72px;
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-align: right;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--primary-dark);
+      background: var(--bg-page);
+    }
+    .slider-input-sync:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(5, 150, 105, 0.4);
+      transition: transform 0.1s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    /* Top-3 Crop Cards */
+    .top-crops-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    .crop-result-card {
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .crop-result-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+    .crop-result-card.rank-1 {
+      border-color: #10b981;
+      background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 50%);
+    }
+    .crop-rank-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: var(--radius-full);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .rank-1 .crop-rank-badge { background: #dcfce7; color: #15803d; }
+    .rank-2 .crop-rank-badge { background: #e0f2fe; color: #0369a1; }
+    .rank-3 .crop-rank-badge { background: #fef3c7; color: #b45309; }
+
+    .crop-result-name {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+    .crop-result-season {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .score-bar-wrapper {
+      margin-bottom: 1rem;
+    }
+    .score-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    .score-bar-track {
+      height: 10px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+      border-radius: 999px;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .score-breakdown-mini {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      background: var(--bg-page);
+      padding: 0.5rem;
+      border-radius: var(--radius-sm);
+      text-align: center;
+    }
+    .score-breakdown-mini div span:first-child {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+    .score-breakdown-mini div span:last-child {
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* Sowing Now Section */
+    .sowing-section {
+      padding: 3.5rem 1.5rem;
+      background: #ffffff;
+    }
+    .sowing-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--primary-bg);
+      color: var(--primary-dark);
+      padding: 0.4rem 1rem;
+      border-radius: var(--radius-full);
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+    .sowing-crops-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1.5rem;
+    }
+    .sowing-crop-card {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.15rem;
+      transition: transform 0.2s, border-color 0.2s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .sowing-crop-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary-light);
+    }
+    .sowing-crop-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .sowing-crop-meta {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+    }
+
+    /* Animated Counters Section */
+    .stats-section {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 4rem 1.5rem;
+    }
+    .stats-grid {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 2.5rem;
+      text-align: center;
+    }
+    .stat-item {
+      padding: 1rem;
+    }
+    .stat-number {
+      font-size: 3.4rem;
+      font-weight: 800;
+      color: #34d399;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    .stat-label {
+      font-size: 1.05rem;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    /* Features Grid */
+    .features-section {
+      padding: 4rem 1.5rem;
+      background: #f8fafc;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.75rem;
+    }
+    .feature-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s;
+    }
+    .feature-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--primary-light);
+    }
+    .feature-icon-box {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      margin-bottom: 1.25rem;
+      background: var(--primary-bg);
+      color: var(--primary-dark);
+    }
+    .feature-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+    }
+    .feature-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* How It Works Strip */
+    .how-section {
+      padding: 4rem 1.5rem;
+      background: #ffffff;
+      border-top: 1px solid var(--border);
+    }
+    .steps-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2rem;
+      position: relative;
+    }
+    .step-card {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.75rem;
+      position: relative;
+    }
+    .step-number {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #ffffff;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    .step-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .step-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Mandi Highlights (Sample Data Badge) */
+    .mandi-section {
+      padding: 3rem 1.5rem;
+      background: #f1f5f9;
+      border-top: 1px solid var(--border);
+    }
+    .sample-badge {
+      display: inline-block;
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+    .mandi-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1.5rem;
+    }
+    .mandi-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .mandi-commodity {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .mandi-district {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+    .mandi-price {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    /* Landing Footer */
+    .landing-footer {
+      background: #0f172a;
+      color: #94a3b8;
+      padding: 3rem 1.5rem 2rem 1.5rem;
+      border-top: 1px solid #1e293b;
+    }
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+    .footer-brand {
+      max-width: 320px;
+    }
+    .footer-brand h3 {
+      color: #ffffff;
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+    }
+    .footer-links {
+      display: flex;
+      gap: 3rem;
+    }
+    .footer-col h4 {
+      color: #f1f5f9;
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+    }
+    .footer-col ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .footer-col li {
+      margin-bottom: 0.4rem;
+    }
+    .footer-col a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .footer-col a:hover {
+      color: #34d399;
+    }
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 2rem auto 0 auto;
+      padding-top: 1.5rem;
+      border-top: 1px solid #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.85rem;
+    }
+
+    /* Reduced Motion Preference */
+    @media (prefers-reduced-motion: reduce) {
+      .anim-stalk-1, .anim-stalk-2, .anim-stalk-3,
+      .anim-cloud-1, .anim-cloud-2, .anim-sun {
+        animation: none !important;
+      }
+      .score-bar-fill {
+        transition: none !important;
+      }
+    }
+
+    /* Mobile Menu Drawer & Toggle */
+    .mobile-menu-toggle {
+      display: none;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.55rem;
+      font-size: 1.15rem;
+      color: var(--ink);
+      cursor: pointer;
+      line-height: 1;
+      transition: all var(--transition-fast);
+    }
+    .mobile-menu-toggle:hover {
+      background: var(--surface-hover);
+    }
+    .mobile-nav-drawer {
+      display: none;
+      width: 100%;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.25rem 1.25rem 1.25rem;
+      box-shadow: var(--shadow-md);
+    }
+    .mobile-nav-drawer.open {
+      display: block;
+    }
+    .mobile-nav-links {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 1rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .mobile-nav-links a {
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: 500;
+      display: block;
+      padding: 0.25rem 0;
+    }
+    .mobile-nav-links a:hover {
+      color: var(--primary);
+    }
+    .mobile-auth-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .btn-block {
+      width: 100%;
+      text-align: center;
+      display: block;
+    }
+
+    @media (max-width: 860px) {
+      .hero-container {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 1.5rem;
+      }
+      .hero-content {
+        margin: 0 auto;
+        padding: 1.25rem 1rem;
+        background: var(--hero-scrim-mobile);
+      }
+      .hero-title {
+        font-size: 2.15rem;
+      }
+      .hero-buttons {
+        justify-content: center;
+      }
+      .hero-scene-wrap {
+        height: 260px;
+      }
+      .landing-nav-links {
+        display: none;
+      }
+      .mobile-menu-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .landing-header .nav-container {
+        padding: 0.5rem 0.75rem;
+      }
+      .landing-brand {
+        font-size: 1.15rem;
+      }
+      .header-actions {
+        gap: 0.35rem;
+      }
+      .btn-outline-login,
+      #nav-register-btn {
+        padding: 0.35rem 0.55rem;
+        font-size: 0.78rem;
+      }
+      .hero-section {
+        padding: 2rem 0.75rem 1.75rem 0.75rem;
+      }
+      .hero-title {
+        font-size: 1.75rem;
+      }
+      .hero-subtitle {
+        font-size: 0.95rem;
+      }
+      .btn-hero-primary,
+      .btn-hero-secondary {
+        width: 100%;
+        justify-content: center;
+        font-size: 0.95rem;
+        padding: 0.75rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header class="landing-header">
+    <div class="nav-container">
+      <a href="/" class="landing-brand">
+        <span>🌱</span> AgriPredict
+      </a>
+
+      <ul class="landing-nav-links">
+        <li><a href="#features" data-i18n="features">Features</a></li>
+        <li><a href="#how-it-works" data-i18n="how_it_works">How It Works</a></li>
+        <li><a href="#try-it" data-i18n="try_it_now">Try It Now</a></li>
+        <li><a href="#sowing-now" data-i18n="sowing_now">Sowing Now</a></li>
+      </ul>
+
+      <div class="header-actions">
+        <!-- Language Switcher -->
+        <div class="lang-switch">
+          <button type="button" class="lang-btn active" data-lang="en" onclick="UI.switchLanguage('en')">EN</button>
+          <button type="button" class="lang-btn" data-lang="mr" onclick="UI.switchLanguage('mr')">MR</button>
+          <button type="button" class="lang-btn" data-lang="hi" onclick="UI.switchLanguage('hi')">HI</button>
+        </div>
+
+        <!-- Auth Action Buttons (Switched via Token Check) -->
+        <div id="header-auth-container" style="display: flex; gap: 0.5rem; align-items: center;">
+          <a href="/ui/login" id="nav-login-btn" class="btn-outline-login" data-i18n="login">Login</a>
+          <a href="/ui/register" id="nav-register-btn" class="btn btn-primary btn-sm" style="font-weight:600;" data-i18n="register">Sign up</a>
+        </div>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button type="button" class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation menu" onclick="toggleMobileMenu()">
+          <span>☰</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <div class="mobile-nav-drawer" id="mobile-nav-drawer">
+      <ul class="mobile-nav-links">
+        <li><a href="#features" data-i18n="features" onclick="closeMobileMenu()">Features</a></li>
+        <li><a href="#how-it-works" data-i18n="how_it_works" onclick="closeMobileMenu()">How It Works</a></li>
+        <li><a href="#try-it" data-i18n="try_it_now" onclick="closeMobileMenu()">Try It Now</a></li>
+        <li><a href="#sowing-now" data-i18n="sowing_now" onclick="closeMobileMenu()">Sowing Now</a></li>
+      </ul>
+      <div id="mobile-auth-container" class="mobile-auth-container">
+        <a href="/ui/login" id="mobile-login-btn" class="btn btn-secondary btn-block" data-i18n="login">Login</a>
+        <a href="/ui/register" id="mobile-register-btn" class="btn btn-primary btn-block" data-i18n="register">Sign up</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section with Animated Field Scene -->
+  <section id="hero" class="hero-section sky-day">
+    <div class="hero-container">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span>🌾</span> <span data-i18n="smart_agri_badge">Smart Agriculture Engine</span>
+        </div>
+        <h1 class="hero-title" data-i18n="hero_title">
+          Smart Agriculture, Better Yields, Maximized Profits
+        </h1>
+        <p class="hero-subtitle" data-i18n="hero_subtitle">
+          AI-driven crop suitability, soil health advisories, dynamic fertilizer plans, and mandi alerts built for Indian farmers.
+        </p>
+        <div class="hero-buttons">
+          <a href="/ui/register" class="btn-hero-primary">
+            <span data-i18n="get_started_free">Get Started Free</span> ➔
+          </a>
+          <a href="#try-it" class="btn-hero-secondary">
+            <span>🔍</span> <span data-i18n="try_quick_check">Try a Quick Crop Check</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Inline SVG Animated Field Scene -->
+      <div class="hero-scene-wrap">
+        <svg class="field-svg" viewBox="0 0 500 350" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Sky Background / Ambient Glow -->
+          <defs>
+            <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#fef08a" stop-opacity="0.9"/>
+              <stop offset="60%" stop-color="#facc15" stop-opacity="0.4"/>
+              <stop offset="100%" stop-color="#eab308" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="hillGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#15803d"/>
+              <stop offset="100%" stop-color="#166534"/>
+            </linearGradient>
+            <linearGradient id="hillGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#22c55e"/>
+              <stop offset="100%" stop-color="#15803d"/>
+            </linearGradient>
+            <linearGradient id="furrowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#84cc16"/>
+              <stop offset="100%" stop-color="#4d7c0f"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Sun or Celestial Body -->
+          <g class="anim-sun">
+            <circle cx="390" cy="85" r="50" fill="url(#sunGlow)"/>
+            <circle cx="390" cy="85" r="28" fill="#fef08a"/>
+          </g>
+
+          <!-- Drifting Clouds -->
+          <g class="anim-cloud-1" opacity="0.85">
+            <path d="M 60 70 Q 75 55, 95 65 Q 115 50, 135 65 Q 155 60, 165 75 Q 175 90, 155 95 L 70 95 Q 50 90, 60 70 Z" fill="#ffffff"/>
+          </g>
+          <g class="anim-cloud-2" opacity="0.7">
+            <path d="M 280 110 Q 295 95, 315 105 Q 330 95, 345 105 Q 360 100, 365 115 L 290 125 Z" fill="#ffffff"/>
+          </g>
+
+          <!-- Distant Rolling Hills -->
+          <path d="M -20 230 Q 120 160, 260 210 Q 380 170, 520 220 L 520 350 L -20 350 Z" fill="url(#hillGrad1)" opacity="0.9"/>
+
+          <!-- Midground Field Lines -->
+          <path d="M -10 250 Q 150 200, 310 240 Q 420 215, 510 255 L 510 350 L -10 350 Z" fill="url(#hillGrad2)"/>
+
+          <!-- Foreground Farm Furrows -->
+          <path d="M 0 280 C 140 260, 320 270, 500 280 L 500 350 L 0 350 Z" fill="url(#furrowGrad)"/>
+
+          <!-- Swaying Crop Stalks (Wheat / Paddy) -->
+          <!-- Group 1 -->
+          <g class="anim-stalk-1" style="transform-origin: 90px 320px;">
+            <path d="M 90 320 Q 88 270, 85 240" stroke="#ca8a04" stroke-width="3" stroke-linecap="round"/>
+            <ellipse cx="83" cy="236" rx="4" ry="9" fill="#eab308" transform="rotate(-15 83 236)"/>
+            <ellipse cx="87" cy="242" rx="4" ry="8" fill="#facc15" transform="rotate(20 87 242)"/>
+            <ellipse cx="82" cy="250" rx="3.5" ry="8" fill="#eab308" transform="rotate(-20 82 250)"/>
+          </g>
+
+          <!-- Group 2 -->
+          <g class="anim-stalk-2" style="transform-origin: 125px 330px;">
+            <path d="M 125 330 Q 127 280, 130 245" stroke="#ca8a04" stroke-width="3" stroke-linecap="round"/>
+            <ellipse cx="132" cy="242" rx="4.5" ry="9" fill="#facc15" transform="rotate(20 132 242)"/>
+            <ellipse cx="127" cy="250" rx="4" ry="8" fill="#eab308" transform="rotate(-15 127 250)"/>
+            <ellipse cx="131" cy="260" rx="3.5" ry="7.5" fill="#facc15" transform="rotate(15 131 260)"/>
+          </g>
+
+          <!-- Group 3 -->
+          <g class="anim-stalk-3" style="transform-origin: 160px 325px;">
+            <path d="M 160 325 Q 158 275, 155 242" stroke="#ca8a04" stroke-width="3" stroke-linecap="round"/>
+            <ellipse cx="153" cy="238" rx="4" ry="9" fill="#eab308" transform="rotate(-15 153 238)"/>
+            <ellipse cx="158" cy="246" rx="4" ry="8" fill="#facc15" transform="rotate(20 158 246)"/>
+          </g>
+
+          <!-- Group 4 -->
+          <g class="anim-stalk-1" style="transform-origin: 360px 325px;">
+            <path d="M 360 325 Q 363 275, 365 245" stroke="#ca8a04" stroke-width="3" stroke-linecap="round"/>
+            <ellipse cx="367" cy="242" rx="4.5" ry="9" fill="#facc15" transform="rotate(15 367 242)"/>
+            <ellipse cx="362" cy="252" rx="4" ry="8" fill="#eab308" transform="rotate(-20 362 252)"/>
+          </g>
+
+          <!-- Group 5 -->
+          <g class="anim-stalk-2" style="transform-origin: 400px 330px;">
+            <path d="M 400 330 Q 398 280, 395 240" stroke="#ca8a04" stroke-width="3" stroke-linecap="round"/>
+            <ellipse cx="393" cy="236" rx="4" ry="9" fill="#eab308" transform="rotate(-15 393 236)"/>
+            <ellipse cx="398" cy="244" rx="4" ry="8" fill="#facc15" transform="rotate(20 398 244)"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- "Try It Now" Quick Crop Recommendation Card -->
+  <section id="try-it" class="try-it-section">
+    <div class="section-wrap">
+      <div class="section-headline">
+        <h2 data-i18n="try_it_now">Try It Now</h2>
+        <p data-i18n="try_it_subtitle">
+          Enter your soil & weather parameters for instant top-3 crop recommendations without registration.
+        </p>
+      </div>
+
+      <div class="try-card">
+        <div id="quick-alert-container"></div>
+
+        <form id="quick-form">
+          <div class="sliders-grid">
+            <!-- Soil pH -->
+            <div class="slider-item">
+              <div class="slider-header">
+                <label for="range-ph"><span data-i18n="ph">Soil pH</span> (0 - 14)</label>
+                <input type="number" id="input-ph" class="slider-input-sync" step="0.1" min="0" max="14" value="6.5">
+              </div>
+              <input type="range" id="range-ph" min="0" max="14" step="0.1" value="6.5">
+            </div>
+
+            <!-- Nitrogen (N) -->
+            <div class="slider-item">
+              <div class="slider-header">
+                <label for="range-n"><span data-i18n="nitrogen">Nitrogen (N)</span> kg/ha</label>
+                <input type="number" id="input-n" class="slider-input-sync" step="1" min="0" max="250" value="80">
+              </div>
+              <input type="range" id="range-n" min="0" max="250" step="1" value="80">
+            </div>
+
+            <!-- Phosphorus (P) -->
+            <div class="slider-item">
+              <div class="slider-header">
+                <label for="range-p"><span data-i18n="phosphorus">Phosphorus (P)</span> kg/ha</label>
+                <input type="number" id="input-p" class="slider-input-sync" step="1" min="0" max="200" value="45">
+              </div>
+              <input type="range" id="range-p" min="0" max="200" step="1" value="45">
+            </div>
+
+            <!-- Potassium (K) -->
+            <div class="slider-item">
+              <div class="slider-header">
+                <label for="range-k"><span data-i18n="potassium">Potassium (K)</span> kg/ha</label>
+                <input type="number" id="input-k" class="slider-input-sync" step="1" min="0" max="200" value="40">
+              </div>
+              <input type="range" id="range-k" min="0" max="200" step="1" value="40">
+            </div>
+
+            <!-- Temperature -->
+            <div class="slider-item">
+              <div class="slider-header">
+                <label for="range-temp"><span data-i18n="temperature">Temperature</span> (°C)</label>
+                <input type="number" id="input-temp" class="slider-input-sync" step="0.5" min="-10" max="60" value="26.0">
+              </div>
+              <input type="range" id="range-temp" min="-10" max="60" step="0.5" value="26.0">
+            </div>
+
+            <!-- Humidity -->
+            <div class="slider-item">
+              <div class="slider-header">
+                <label for="range-hum"><span data-i18n="humidity">Humidity</span> (%)</label>
+                <input type="number" id="input-hum" class="slider-input-sync" step="1" min="0" max="100" value="70">
+              </div>
+              <input type="range" id="range-hum" min="0" max="100" step="1" value="70">
+            </div>
+
+            <!-- Rainfall (30-day) -->
+            <div class="slider-item">
+              <div class="slider-header">
+                <label for="range-rain"><span data-i18n="rainfall">Rainfall (30d)</span> (mm)</label>
+                <input type="number" id="input-rain" class="slider-input-sync" step="5" min="0" max="600" value="120">
+              </div>
+              <input type="range" id="range-rain" min="0" max="600" step="5" value="120">
+            </div>
+
+            <!-- Season Selector -->
+            <div class="slider-item">
+              <div class="slider-header">
+                <label for="select-season"><span data-i18n="season_filter">Season Filter</span></label>
+              </div>
+              <select id="select-season" class="form-control" style="padding:0.4rem 0.6rem; font-weight:600;">
+                <option value="" data-i18n="auto_season_opt">Auto (Today's Season)</option>
+                <option value="ALL" data-i18n="all_seasons_opt">All Seasons</option>
+                <option value="Kharif" data-i18n="season_kharif">Kharif</option>
+                <option value="Rabi" data-i18n="season_rabi">Rabi</option>
+                <option value="Zaid" data-i18n="season_zaid">Zaid</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="text-align: center;">
+            <button type="submit" id="quick-btn-submit" class="btn btn-primary" style="padding: 0.85rem 2.25rem; font-size: 1.05rem;">
+              <span>✨</span> <span data-i18n="check_top_crops">Check Top 3 Crops</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Top 3 Crop Cards Container -->
+        <div id="quick-results-wrap" style="display: none; margin-top: 2rem; border-top: 1px dashed var(--border); padding-top: 1.5rem;">
+          <h3 style="text-align: center; font-size: 1.35rem; font-weight: 700; margin-bottom: 1rem;">
+            🏆 <span data-i18n="top_crops_heading">Recommended Crops for Your Farm</span>
+          </h3>
+          <div id="quick-results-grid" class="top-crops-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- "Sowing Now" Card -->
+  <section id="sowing-now" class="sowing-section">
+    <div class="section-wrap">
+      <div class="section-headline" style="text-align: left; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:1rem;">
+        <div>
+          <div class="sowing-badge">
+            <span>🌱</span> <span id="current-season-badge">Current Season: Detecting...</span>
+          </div>
+          <h2 data-i18n="sowing_now">Sowing Now</h2>
+          <p data-i18n="sowing_now_subtitle">
+            Crops best suited for sowing in the current season and year-round perennials.
+          </p>
+        </div>
+        <a href="/ui/register" class="btn btn-secondary btn-sm" style="margin-bottom:0.5rem;" data-i18n="register">Register to Track Cycles</a>
+      </div>
+
+      <div id="sowing-crops-container" class="sowing-crops-grid">
+        <div class="empty-state" style="grid-column: 1 / -1; padding: 2rem;">
+          <div class="empty-state-icon">⏳</div>
+          <p>Loading crops for the current sowing window...</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Platform Stats Animated Counters -->
+  <section class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-number" id="stat-crops" data-target="0">0</div>
+        <div class="stat-label" data-i18n="crops_supported_stat">Crops Supported</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="stat-langs" data-target="3">3</div>
+        <div class="stat-label" data-i18n="languages_supported_stat">Languages (EN | MR | HI)</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="stat-recs" data-target="0">0</div>
+        <div class="stat-label" data-i18n="recommendations_stat">Recommendations Made</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section id="features" class="features-section">
+    <div class="section-wrap">
+      <div class="section-headline">
+        <h2 data-i18n="features">Features</h2>
+        <p data-i18n="features_sub">Comprehensive smart farm management engineered with precision agronomics.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-box">🌱</div>
+          <h3 class="feature-title" data-i18n="recommend_crop">Crop Recommendations</h3>
+          <p class="feature-desc" data-i18n="feature_recommend_desc">
+            Scientific crop matching based on N-P-K, pH, temperature, humidity, and rainfall.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🧪</div>
+          <h3 class="feature-title" data-i18n="fertilizer_plan">Fertilizer Plan</h3>
+          <p class="feature-desc" data-i18n="feature_fert_desc">
+            Custom fertilizer dosage calculated from soil deficits to prevent over-spending.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">📅</div>
+          <h3 class="feature-title" data-i18n="crop_calendar">Crop Calendar</h3>
+          <p class="feature-desc" data-i18n="feature_calendar_desc">
+            Daily activity schedules and timely task reminders across crop lifecycle stages.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">⛅</div>
+          <h3 class="feature-title" data-i18n="alerts">Weather & Price Alerts</h3>
+          <p class="feature-desc" data-i18n="feature_alerts_desc">
+            Early alerts for rainstorms, heatwaves, frost, and mandi rate surges.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">💰</div>
+          <h3 class="feature-title" data-i18n="profit">Profit Estimates</h3>
+          <p class="feature-desc" data-i18n="feature_profit_desc">
+            Projected revenue and cost estimations before investing your capital.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🗣️</div>
+          <h3 class="feature-title" data-i18n="preferred_language">Three Languages</h3>
+          <p class="feature-desc" data-i18n="feature_i18n_desc">
+            Seamless experience in English, Marathi, and Hindi for grassroots farmers.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works 4-Step Strip -->
+  <section id="how-it-works" class="how-section">
+    <div class="section-wrap">
+      <div class="section-headline">
+        <h2 data-i18n="how_it_works">How It Works</h2>
+        <p data-i18n="how_it_works_sub">Four easy steps from soil testing to high-profit market harvest.</p>
+      </div>
+
+      <div class="steps-strip">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <h3 class="step-title" data-i18n="step_1_title">Enter Soil & Location</h3>
+          <p class="step-desc" data-i18n="step_1_desc">Pick your village on the interactive map and enter basic soil test N-P-K and pH levels.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <h3 class="step-title" data-i18n="step_2_title">Get Top Suitability</h3>
+          <p class="step-desc" data-i18n="step_2_desc">Advanced database scoring algorithms rank the top crops best suited for your plot.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <h3 class="step-title" data-i18n="step_3_title">Follow Stage Advisories</h3>
+          <p class="step-desc" data-i18n="step_3_desc">Receive stage-by-stage task notifications, irrigation schedules, and nutrient dosages.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">4</div>
+          <h3 class="step-title" data-i18n="step_4_title">Track Mandis & Profit</h3>
+          <p class="step-desc" data-i18n="step_4_desc">Monitor local APMC mandi commodity rates and record expenses for maximum return on investment.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mandi Market Prices Strip (Clearly labeled: Sample data) -->
+  <section class="mandi-section">
+    <div class="section-wrap">
+      <div class="section-headline" style="text-align: left;">
+        <h2>
+          <span data-i18n="mandi_highlights">Live Mandi Price Highlights</span>
+          <span class="sample-badge" data-i18n="sample_data">Sample data</span>
+        </h2>
+        <p style="margin: 0;" data-i18n="sample_mandi_sub">Sample modal rates across key Maharashtra agricultural produce market committees.</p>
+      </div>
+
+      <div class="mandi-cards-grid">
+        <div class="mandi-card">
+          <div class="mandi-commodity" data-i18n="crop_soybean">Soybean</div>
+          <div class="mandi-district">Latur Mandi (APMC)</div>
+          <div class="mandi-price">₹4,450 <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">/ q</span></div>
+        </div>
+        <div class="mandi-card">
+          <div class="mandi-commodity" data-i18n="crop_wheat">Wheat</div>
+          <div class="mandi-district">Pune APMC</div>
+          <div class="mandi-price">₹2,680 <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">/ q</span></div>
+        </div>
+        <div class="mandi-card">
+          <div class="mandi-commodity" data-i18n="crop_cotton">Cotton</div>
+          <div class="mandi-district">Amravati Mandi</div>
+          <div class="mandi-price">₹7,150 <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">/ q</span></div>
+        </div>
+        <div class="mandi-card">
+          <div class="mandi-commodity" data-i18n="crop_onion">Onion</div>
+          <div class="mandi-district">Lasalgaon Mandi</div>
+          <div class="mandi-price">₹1,950 <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">/ q</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="landing-footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <h3>🌱 AgriPredict</h3>
+        <p>Smart Agriculture Management, Stored Procedure Recommendation Engine & Agronomic Advisory Platform.</p>
+        <p style="margin-top: 0.5rem; font-size: 0.8rem; color: #64748b;">DBMS Project Implementation &bull; Production Ready</p>
+      </div>
+
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="#features" data-i18n="features">Features</a></li>
+            <li><a href="#how-it-works" data-i18n="how_it_works">How It Works</a></li>
+            <li><a href="#try-it" data-i18n="try_it_now">Try It Now</a></li>
+            <li><a href="#sowing-now" data-i18n="sowing_now">Sowing Now</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Farmer Portal</h4>
+          <ul>
+            <li><a href="/ui/login" data-i18n="login">Farmer Login</a></li>
+            <li><a href="/ui/register" data-i18n="register">Create Account</a></li>
+            <li><a href="/ui/dashboard" data-i18n="dashboard">Dashboard</a></li>
+            <li><a href="/docs">API Docs (Swagger)</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div>&copy; 2026 AgriPredict. Built for Indian Farmers.</div>
+      <div style="display: flex; gap: 0.5rem;">
+        <span style="color:#64748b;">Languages:</span>
+        <a href="javascript:void(0)" onclick="UI.switchLanguage('en')" style="color:#34d399;">English</a> &bull;
+        <a href="javascript:void(0)" onclick="UI.switchLanguage('mr')" style="color:#34d399;">मराठी</a> &bull;
+        <a href="javascript:void(0)" onclick="UI.switchLanguage('hi')" style="color:#34d399;">हिंदी</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/js/api.js"></script>
+  <script>
+    // ------------------------------------------------------------------------
+    // Public Home Page Logic
+    // ------------------------------------------------------------------------
+
+    // 1. Time of Day Sky Gradient with ?sky= Override
+    function applyTimeOfDaySky() {
+      const hero = document.getElementById("hero");
+      if (!hero) return;
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const skyParam = (urlParams.get("sky") || "").toLowerCase().trim();
+
+      hero.classList.remove("sky-dawn", "sky-day", "sky-dusk", "sky-sunset", "sky-night");
+
+      if (skyParam === "dawn") {
+        hero.classList.add("sky-dawn");
+        return;
+      }
+      if (skyParam === "day") {
+        hero.classList.add("sky-day");
+        return;
+      }
+      if (skyParam === "dusk" || skyParam === "sunset") {
+        hero.classList.add("sky-dusk");
+        return;
+      }
+      if (skyParam === "night") {
+        hero.classList.add("sky-night");
+        return;
+      }
+
+      // Default by visitor local hour
+      const hour = new Date().getHours();
+      if (hour >= 5 && hour < 8) {
+        hero.classList.add("sky-dawn");
+      } else if (hour >= 8 && hour < 17) {
+        hero.classList.add("sky-day");
+      } else if (hour >= 17 && hour < 19) {
+        hero.classList.add("sky-dusk");
+      } else {
+        hero.classList.add("sky-night");
+      }
+    }
+
+    // Mobile Menu Controls
+    function toggleMobileMenu() {
+      const drawer = document.getElementById("mobile-nav-drawer");
+      const btn = document.getElementById("mobile-menu-toggle");
+      if (!drawer) return;
+      const isOpen = drawer.classList.toggle("open");
+      if (btn) btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    }
+
+    function closeMobileMenu() {
+      const drawer = document.getElementById("mobile-nav-drawer");
+      const btn = document.getElementById("mobile-menu-toggle");
+      if (drawer) drawer.classList.remove("open");
+      if (btn) btn.setAttribute("aria-expanded", "false");
+    }
+
+    // 2. Auth State Aware Header: Switch Login/Register vs Dashboard/Avatar
+    async function updateHeaderAuth() {
+      const authContainer = document.getElementById("header-auth-container");
+      const mobileAuthContainer = document.getElementById("mobile-auth-container");
+      if (!authContainer && !mobileAuthContainer) return;
+
+      const token = API.getToken();
+      if (!token) {
+        renderLoggedOutAuth();
+        return;
+      }
+
+      // Strictly verify token with backend /me endpoint
+      try {
+        const farmer = await API.getMe();
+        if (!farmer || !farmer.id) {
+          throw new Error("Invalid session");
+        }
+        API.setFarmer(farmer);
+        renderLoggedInAuth(farmer);
+      } catch (err) {
+        // Expired or invalid token: clear session and show logged-out state
+        API.clearSession();
+        renderLoggedOutAuth();
+      }
+    }
+
+    function renderLoggedOutAuth() {
+      const authContainer = document.getElementById("header-auth-container");
+      const mobileAuthContainer = document.getElementById("mobile-auth-container");
+      const loginText = UI.t("login", "Login");
+      const registerText = UI.t("register", "Sign up");
+
+      if (authContainer) {
+        authContainer.innerHTML = `
+          <a href="/ui/login" id="nav-login-btn" class="btn-outline-login" data-i18n="login">${loginText}</a>
+          <a href="/ui/register" id="nav-register-btn" class="btn btn-primary btn-sm" style="font-weight:600;" data-i18n="register">${registerText}</a>
+        `;
+      }
+      if (mobileAuthContainer) {
+        mobileAuthContainer.innerHTML = `
+          <a href="/ui/login" id="mobile-login-btn" class="btn btn-secondary btn-block" data-i18n="login">${loginText}</a>
+          <a href="/ui/register" id="mobile-register-btn" class="btn btn-primary btn-block" data-i18n="register">${registerText}</a>
+        `;
+      }
+    }
+
+    function renderLoggedInAuth(farmer) {
+      const authContainer = document.getElementById("header-auth-container");
+      const mobileAuthContainer = document.getElementById("mobile-auth-container");
+      const initial = (farmer && farmer.name) ? farmer.name.trim().charAt(0).toUpperCase() : "👨‍🌾";
+      const displayName = (farmer && farmer.name) ? farmer.name.split(" ")[0] : "Farmer";
+      const dashboardText = UI.t("dashboard", "Dashboard");
+      const logoutText = UI.t("logout", "Logout");
+
+      if (authContainer) {
+        authContainer.innerHTML = `
+          <a href="/ui/dashboard" class="btn btn-primary btn-sm" style="font-weight:600;" data-i18n="dashboard">
+            ${dashboardText}
+          </a>
+          <a href="/ui/dashboard" class="user-avatar-btn" title="Logged in as ${displayName}">
+            <div class="user-avatar-circle">${initial}</div>
+            <span>${displayName}</span>
+          </a>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="UI.logout()" style="padding:0.3rem 0.6rem; font-size:0.8rem;" data-i18n="logout">
+            ${logoutText}
+          </button>
+        `;
+      }
+      if (mobileAuthContainer) {
+        mobileAuthContainer.innerHTML = `
+          <a href="/ui/dashboard" class="btn btn-primary btn-block" data-i18n="dashboard">${dashboardText}</a>
+          <button type="button" class="btn btn-secondary btn-block" onclick="UI.logout()" data-i18n="logout">${logoutText}</button>
+        `;
+      }
+    }
+
+    // 3. Sliders Two-Way Sync Bindings
+    function setupSlidersSync() {
+      const bindings = [
+        { slider: "range-ph", input: "input-ph" },
+        { slider: "range-n", input: "input-n" },
+        { slider: "range-p", input: "input-p" },
+        { slider: "range-k", input: "input-k" },
+        { slider: "range-temp", input: "input-temp" },
+        { slider: "range-hum", input: "input-hum" },
+        { slider: "range-rain", input: "input-rain" },
+      ];
+
+      bindings.forEach(({ slider, input }) => {
+        const sEl = document.getElementById(slider);
+        const iEl = document.getElementById(input);
+        if (!sEl || !iEl) return;
+
+        sEl.addEventListener("input", () => {
+          iEl.value = sEl.value;
+        });
+        iEl.addEventListener("input", () => {
+          sEl.value = iEl.value;
+        });
+      });
+    }
+
+    // 4. Quick Recommend Submission
+    async function handleQuickRecommend(e) {
+      e.preventDefault();
+      UI.clearAlert("quick-alert-container");
+
+      const ph = parseFloat(document.getElementById("input-ph").value);
+      const n = parseFloat(document.getElementById("input-n").value);
+      const p = parseFloat(document.getElementById("input-p").value);
+      const k = parseFloat(document.getElementById("input-k").value);
+      const temperature = parseFloat(document.getElementById("input-temp").value);
+      const humidity = parseFloat(document.getElementById("input-hum").value);
+      const rainfall = parseFloat(document.getElementById("input-rain").value);
+      const seasonVal = document.getElementById("select-season").value || null;
+      const lang = API.getLang();
+
+      const submitBtn = document.getElementById("quick-btn-submit");
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span>⏳</span> Calculating...`;
+
+      try {
+        const payload = {
+          ph,
+          n,
+          p,
+          k,
+          temperature,
+          humidity,
+          rainfall,
+          season: seasonVal,
+          lang,
+        };
+
+        const res = await API.request("/public/quick-recommend", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+
+        renderQuickResults(res);
+      } catch (err) {
+        UI.showAlert("quick-alert-container", err.message || "Could not calculate recommendations.", "danger");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>✨</span> <span data-i18n="check_top_crops">${UI.t("check_top_crops", "Check Top 3 Crops")}</span>`;
+      }
+    }
+
+    function renderQuickResults(crops) {
+      const wrap = document.getElementById("quick-results-wrap");
+      const grid = document.getElementById("quick-results-grid");
+      if (!wrap || !grid) return;
+
+      if (!crops || crops.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column: 1 / -1;">
+            <p>No crops match your soil and weather values.</p>
+          </div>
+        `;
+        wrap.style.display = "block";
+        return;
+      }
+
+      grid.innerHTML = crops.map(c => {
+        const rankClass = `rank-${c.rank_no}`;
+        return `
+          <div class="crop-result-card ${rankClass}">
+            <span class="crop-rank-badge">#${c.rank_no} Match</span>
+            <div class="crop-result-name">${c.localized_name || c.crop_name}</div>
+            <div class="crop-result-season">🌱 ${UI.translateSeason(c.season)} Season</div>
+
+            <div class="score-bar-wrapper">
+              <div class="score-bar-label">
+                <span>Suitability</span>
+                <span style="color:var(--primary);">${c.suitability}%</span>
+              </div>
+              <div class="score-bar-track">
+                <div class="score-bar-fill" style="width: 0%;" data-fill="${c.suitability}%"></div>
+              </div>
+            </div>
+
+            <div class="score-breakdown-mini">
+              <div>
+                <span>pH</span>
+                <span>${c.ph_score}%</span>
+              </div>
+              <div>
+                <span>Temp</span>
+                <span>${c.temp_score}%</span>
+              </div>
+              <div>
+                <span>Rain</span>
+                <span>${c.rain_score}%</span>
+              </div>
+              <div>
+                <span>NPK</span>
+                <span>${Math.round((c.n_score + c.p_score + c.k_score) / 3)}%</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      wrap.style.display = "block";
+      wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+      // Animate score bars
+      setTimeout(() => {
+        grid.querySelectorAll(".score-bar-fill").forEach(el => {
+          el.style.width = el.getAttribute("data-fill");
+        });
+      }, 50);
+    }
+
+    // 5. Load "Sowing Now" Crops
+    async function loadSowingNow() {
+      const container = document.getElementById("sowing-crops-container");
+      const badge = document.getElementById("current-season-badge");
+      if (!container) return;
+
+      try {
+        const lang = API.getLang();
+        const data = await API.request(`/public/season?lang=${encodeURIComponent(lang)}`);
+        
+        if (badge) {
+          const sName = UI.translateSeason(data.season);
+          badge.textContent = `Current Season: ${sName}`;
+        }
+
+        if (!data.crops || data.crops.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+              <p>No crops scheduled for current sowing period.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = data.crops.map(c => `
+          <div class="sowing-crop-card">
+            <div>
+              <div class="sowing-crop-name">${c.localized_name || c.crop_name}</div>
+              <div class="sowing-crop-meta">${UI.translateSeason(c.season)} &bull; ${c.duration_days} <span data-i18n="days_duration">days</span></div>
+            </div>
+            <div style="margin-top: 0.75rem;">
+              <span style="font-size: 0.75rem; color: var(--primary); font-weight: 600;">✓ In Season</span>
+            </div>
+          </div>
+        `).join("");
+      } catch (err) {
+        console.warn("Failed loading sowing season crops:", err);
+      }
+    }
+
+    // 6. Load Animated Statistics Counters
+    async function loadStatsCounters() {
+      try {
+        const stats = await API.request("/public/stats");
+        
+        animateCounter("stat-crops", stats.crops_supported || 20);
+        animateCounter("stat-langs", stats.languages_supported || 3);
+        animateCounter("stat-recs", stats.recommendations_made || 0);
+      } catch (err) {
+        console.warn("Could not load public stats:", err);
+      }
+    }
+
+    function animateCounter(elementId, targetValue) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const target = Number(targetValue);
+      if (isNaN(target)) return;
+
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (prefersReduced) {
+        el.textContent = target.toLocaleString();
+        return;
+      }
+
+      const duration = 1200; // ms
+      const steps = 30;
+      const stepTime = duration / steps;
+      let current = 0;
+      const increment = Math.ceil(target / steps);
+
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+          current = target;
+          clearInterval(timer);
+        }
+        el.textContent = current.toLocaleString();
+      }, stepTime);
+    }
+
+    // 7. Page Initialization
+    async function initHomePage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlLang = (urlParams.get("lang") || "").toLowerCase().trim();
+      if (urlLang && (urlLang === "en" || urlLang === "mr" || urlLang === "hi")) {
+        API.setLang(urlLang);
+      }
+
+      applyTimeOfDaySky();
+      setupSlidersSync();
+
+      // Listen for language change events
+      window.addEventListener("agri_lang_changed", async () => {
+        await updateHeaderAuth();
+        await loadSowingNow();
+      });
+
+      // Bind quick recommend form
+      const form = document.getElementById("quick-form");
+      if (form) form.addEventListener("submit", handleQuickRecommend);
+
+      await UI.applyTranslations();
+      await updateHeaderAuth();
+      await loadSowingNow();
+      await loadStatsCounters();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initHomePage);
+    } else {
+      initHomePage();
+    }
+  </script>
+</body>
+</html>

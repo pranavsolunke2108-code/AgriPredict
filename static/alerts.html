@@ -3,156 +3,242 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Alerts & Notifications - AgriPredict</title>
-  <link rel="stylesheet" href="/static/css/style.css">
+  <title>Field Alerts & Advisories - AgriPredict</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/css/theme.css">
   <style>
-    .alerts-container {
-      max-width: 900px;
-      margin: 2rem auto;
-      padding: 0 1.5rem;
-    }
-    .alerts-toolbar {
+    .filter-chips-wrap {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
       flex-wrap: wrap;
-      gap: 1rem;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
     }
-    .filter-tabs {
-      display: flex;
-      background: #f1f5f9;
-      padding: 0.25rem;
-      border-radius: var(--radius-sm);
-      gap: 0.25rem;
-    }
-    .filter-tab {
-      border: none;
-      background: transparent;
-      padding: 0.4rem 0.9rem;
-      border-radius: var(--radius-sm);
-      font-size: 0.85rem;
+    .filter-chip-btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink-secondary);
+      padding: 0.35rem 0.85rem;
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
       font-weight: 600;
-      color: var(--text-muted);
       cursor: pointer;
-      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-height: 36px;
+      transition: all var(--transition-fast);
     }
-    .filter-tab.active {
-      background: #ffffff;
-      color: var(--text-main);
+    .filter-chip-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--border-strong);
+    }
+    .filter-chip-btn.active {
+      background: var(--primary);
+      color: var(--primary-contrast);
+      border-color: var(--primary);
+    }
+    .alert-card-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 0.85rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      transition: all var(--transition-fast);
+    }
+    .alert-card-item.unread {
+      border-left: 5px solid var(--warning-terracotta);
+      background: var(--surface);
       box-shadow: var(--shadow-sm);
+    }
+    .alert-card-item.read {
+      border-left: 5px solid var(--border);
+      opacity: 0.9;
+    }
+    .alert-icon-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      flex-shrink: 0;
     }
   </style>
 </head>
-<body>
+<body class="auth-protected">
   <div id="navbar-placeholder"></div>
 
-  <div class="alerts-container">
+  <div class="container" style="max-width: 960px;">
     <div id="page-alert-box"></div>
 
-    <div class="alerts-toolbar">
+    <div class="card-header" style="margin-bottom: 1.25rem;">
       <div>
-        <h1 style="font-size: 1.6rem; font-weight: 700; color: #0f172a;">🔔 Field Alerts & Advisories</h1>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.2rem;">
-          Trigger-based weather warnings and crop stage management tasks for your registered farms.
+        <h1 style="font-size: var(--text-2xl); font-weight: 800; color: var(--ink);">
+          🔔 <span data-i18n="alerts">Field Alerts</span> & Advisories
+        </h1>
+        <p style="color: var(--muted); font-size: var(--text-sm); margin-top: 0.25rem;">
+          Automated weather warnings, agronomic stage tasks, and mandi price alerts for your plots.
         </p>
       </div>
-      <div style="display: flex; gap: 0.75rem; align-items: center;">
-        <button class="btn btn-secondary btn-sm" onclick="loadAlerts()">🔄 Refresh</button>
-        <button class="btn btn-primary btn-sm" onclick="handleMarkAllRead()">✓ Mark All as Read</button>
+      <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="loadAlerts()">
+          🔄 <span data-i18n="refresh">Refresh</span>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="handleMarkAllRead()">
+          ✓ <span data-i18n="mark_all_read">Mark All as Read</span>
+        </button>
       </div>
     </div>
 
-    <div class="alerts-toolbar" style="margin-bottom: 1rem;">
-      <div class="filter-tabs">
-        <button class="filter-tab active" id="tab-all" onclick="setFilter(false)">All Alerts</button>
-        <button class="filter-tab" id="tab-unread" onclick="setFilter(true)">Unread Only</button>
-      </div>
-      <div id="alerts-status-info" style="font-size: 0.85rem; color: var(--text-muted);"></div>
+    <!-- Filter Chips -->
+    <div class="filter-chips-wrap">
+      <button type="button" class="filter-chip-btn active" id="chip-type-all" onclick="setTypeFilter('ALL')">
+        All Types
+      </button>
+      <button type="button" class="filter-chip-btn" id="chip-type-unread" onclick="toggleUnreadOnly()">
+        <span class="badge-unread" style="font-size:0.65rem; padding:1px 5px;">•</span> Unread Only
+      </button>
+      <button type="button" class="filter-chip-btn" id="chip-type-rain" onclick="setTypeFilter('Rain')">
+        🌧️ Rain
+      </button>
+      <button type="button" class="filter-chip-btn" id="chip-type-heat" onclick="setTypeFilter('Heat')">
+        ☀️ Heat
+      </button>
+      <button type="button" class="filter-chip-btn" id="chip-type-frost" onclick="setTypeFilter('Frost')">
+        ❄️ Frost
+      </button>
+      <button type="button" class="filter-chip-btn" id="chip-type-drought" onclick="setTypeFilter('Drought')">
+        🏜️ Drought
+      </button>
+      <button type="button" class="filter-chip-btn" id="chip-type-task" onclick="setTypeFilter('Task')">
+        📋 Stage Task
+      </button>
+      <button type="button" class="filter-chip-btn" id="chip-type-price" onclick="setTypeFilter('Price')">
+        💰 Price
+      </button>
     </div>
+
+    <div id="alerts-status-info" style="font-size: 0.82rem; color: var(--muted); margin-bottom: 0.85rem; font-weight: 600;"></div>
 
     <div id="alerts-list">
-      <div class="card" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
-        Loading alerts...
-      </div>
+      <!-- Loading skeleton -->
     </div>
   </div>
 
   <script src="/static/js/api.js"></script>
   <script>
     let filterUnreadOnly = false;
+    let selectedTypeFilter = "ALL";
+    let cachedAlerts = [];
 
-    function setFilter(unread) {
-      filterUnreadOnly = unread;
-      document.getElementById("tab-all").classList.toggle("active", !unread);
-      document.getElementById("tab-unread").classList.toggle("active", unread);
+    const typeColors = {
+      Rain: { bg: "var(--info-subtle)", color: "var(--info-water)", icon: "🌧️" },
+      Heat: { bg: "var(--accent-gold-subtle)", color: "var(--accent-gold)", icon: "☀️" },
+      Frost: { bg: "var(--info-subtle)", color: "var(--info-water)", icon: "❄️" },
+      Drought: { bg: "var(--warning-subtle)", color: "var(--warning-terracotta)", icon: "🏜️" },
+      Task: { bg: "var(--primary-subtle)", color: "var(--primary)", icon: "📋" },
+      Price: { bg: "var(--accent-gold-subtle)", color: "#b45309", icon: "💰" },
+    };
+
+    function toggleUnreadOnly() {
+      filterUnreadOnly = !filterUnreadOnly;
+      document.getElementById("chip-type-unread").classList.toggle("active", filterUnreadOnly);
       loadAlerts();
     }
 
+    function setTypeFilter(type) {
+      selectedTypeFilter = type;
+      document.querySelectorAll(".filter-chip-btn").forEach(btn => {
+        if (btn.id !== "chip-type-unread") {
+          btn.classList.remove("active");
+        }
+      });
+      const activeBtn = document.getElementById(`chip-type-${type.toLowerCase()}`);
+      if (activeBtn) activeBtn.classList.add("active");
+      renderAlertsList();
+    }
+
     async function loadAlerts() {
-      if (!UI.requireAuth()) return;
       const listEl = document.getElementById("alerts-list");
-      const infoEl = document.getElementById("alerts-status-info");
+      if (listEl) listEl.innerHTML = UI.getCardSkeleton(3);
 
       try {
-        const alerts = await API.getAlerts({ unread: filterUnreadOnly, limit: 50 });
+        cachedAlerts = await API.getAlerts({ unread: filterUnreadOnly, limit: 100 });
         UI.updateAlertBadge();
-
-        if (!alerts || alerts.length === 0) {
-          infoEl.textContent = "";
-          listEl.innerHTML = `
-            <div class="empty-state card">
-              <div class="empty-state-icon">🛡️</div>
-              <h3 style="font-size: 1.15rem; color: #1e293b; margin-bottom: 0.35rem;">
-                ${filterUnreadOnly ? "No Unread Alerts" : "No Alerts Found"}
-              </h3>
-              <p style="font-size: 0.9rem; color: var(--text-muted); max-width: 420px; margin: 0 auto;">
-                ${filterUnreadOnly ? "Great job! All your field and weather notifications have been reviewed." : "Your crops and weather conditions are stable. Automated trigger alerts will appear here whenever weather risks or scheduled growth tasks occur."}
-              </p>
-            </div>
-          `;
-          return;
-        }
-
-        infoEl.textContent = `Showing ${alerts.length} alert${alerts.length === 1 ? '' : 's'}`;
-
-        listEl.innerHTML = alerts.map(a => {
-          const meta = UI.getAlertMeta(a.alert_type);
-          const timeFormatted = UI.formatDate(a.created_at);
-
-          return `
-            <div class="alert-card ${a.is_read ? 'read' : 'unread'}" id="alert-card-${a.alert_id}">
-              <div class="alert-icon-box">
-                ${meta.icon}
-              </div>
-              <div class="alert-content">
-                <div class="alert-header">
-                  <div class="alert-meta">
-                    <span class="alert-type-badge ${meta.badgeClass}">${meta.icon} ${meta.label}</span>
-                    <span>•</span>
-                    <span style="font-weight: 600; color: #334155;">📍 ${a.farm_name || `Farm #${a.farm_id}`}</span>
-                    <span>•</span>
-                    <span>${timeFormatted}</span>
-                  </div>
-                  ${!a.is_read ? `
-                    <button class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.6rem; font-size: 0.78rem;" onclick="handleMarkRead(${a.alert_id})">
-                      Mark as read
-                    </button>
-                  ` : `
-                    <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 500;">Read</span>
-                  `}
-                </div>
-                <div style="font-size: 0.92rem; color: #1e293b; margin-top: 0.35rem; line-height: 1.45;">
-                  ${a.message}
-                </div>
-              </div>
-            </div>
-          `;
-        }).join("");
-
+        renderAlertsList();
       } catch (err) {
         UI.showAlert("page-alert-box", err.message || "Failed to load alerts.", "danger");
       }
+    }
+
+    function renderAlertsList() {
+      const listEl = document.getElementById("alerts-list");
+      const infoEl = document.getElementById("alerts-status-info");
+
+      let filtered = cachedAlerts;
+      if (selectedTypeFilter !== "ALL") {
+        filtered = filtered.filter(a => a.alert_type === selectedTypeFilter);
+      }
+
+      if (!filtered || filtered.length === 0) {
+        infoEl.textContent = "";
+        listEl.innerHTML = UI.getEmptyState(
+          "🛡️",
+          filterUnreadOnly ? UI.t("no_unread_alerts", "No Unread Alerts") : UI.t("no_alerts_found", "No Alerts Found"),
+          filterUnreadOnly
+            ? UI.t("no_unread_desc", "Great job! All your field and weather notifications have been reviewed.")
+            : UI.t("no_alerts_desc", "Your crops and weather conditions are stable. Automated notifications will appear here when weather warnings or scheduled stage tasks trigger.")
+        );
+        return;
+      }
+
+      infoEl.textContent = `Showing ${filtered.length} alert${filtered.length === 1 ? '' : 's'}`;
+
+      listEl.innerHTML = filtered.map(a => {
+        const meta = UI.getAlertMeta(a.alert_type);
+        const styleConfig = typeColors[a.alert_type] || { bg: "var(--surface-alt)", color: "var(--ink)", icon: meta.icon };
+        const timeFormatted = UI.formatDate(a.created_at);
+
+        return `
+          <div class="alert-card-item ${a.is_read ? 'read' : 'unread'}" id="alert-card-${a.alert_id}">
+            <div class="alert-icon-avatar" style="background:${styleConfig.bg}; color:${styleConfig.color};">
+              ${styleConfig.icon}
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.35rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; font-size:0.8rem;">
+                  <span class="chip" style="background:${styleConfig.bg}; color:${styleConfig.color}; font-weight:700; border:1px solid ${styleConfig.color};">
+                    ${styleConfig.icon} ${meta.label}
+                  </span>
+                  <span style="font-weight:600; color:var(--ink);">📍 ${a.farm_name || `Farm #${a.farm_id}`}</span>
+                  <span style="color:var(--muted); font-size:0.75rem;">• ${timeFormatted}</span>
+                </div>
+
+                <div>
+                  ${!a.is_read ? `
+                    <button class="btn btn-secondary btn-sm" style="padding:0.2rem 0.65rem; font-size:0.75rem;" onclick="handleMarkRead(${a.alert_id})">
+                      ✓ Mark read
+                    </button>
+                  ` : `
+                    <span style="font-size:0.75rem; color:var(--muted); font-weight:500;">✓ Read</span>
+                  `}
+                </div>
+              </div>
+
+              <div style="font-size:0.92rem; color:var(--ink); line-height:1.5;">
+                ${a.message}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
     }
 
     async function handleMarkRead(alertId) {
@@ -174,10 +260,17 @@
       }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    async function initAlerts() {
+      if (!(await UI.requireAuth())) return;
       UI.renderNavbar("alerts");
-      loadAlerts();
-    });
+      await loadAlerts();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initAlerts);
+    } else {
+      initAlerts();
+    }
   </script>
 </body>
 </html>
