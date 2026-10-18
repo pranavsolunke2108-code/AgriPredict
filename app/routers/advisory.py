@@ -113,7 +113,7 @@ def get_fertilizer_advice(
             fertilizer=r["fertilizer"],
             kg_per_acre=float(r["kg_per_acre"]),
             kg_for_farm=float(r["kg_for_farm"]),
-            estimated_cost=float(r["estimated_cost"]),
+            estimated_cost=float(r.get("estimated_cost") if r.get("estimated_cost") is not None else (r.get("est_cost_rs") or 0.0)),
         )
         for r in valid_rows
     ]

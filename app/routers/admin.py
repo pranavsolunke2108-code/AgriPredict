@@ -17,6 +17,8 @@ from app.schemas import (
     CropStageCreateUpdateRequest,
     CropStageDetailResponse,
     CsvUploadResponse,
+    DataQualityCropItem,
+    DataQualityResponse,
     FarmerProfileResponse,
     FertilizerCreateUpdateRequest,
     FertilizerDetailResponse,
@@ -39,13 +41,13 @@ router = APIRouter(prefix="/admin", tags=["Admin Management"])
 
 @router.get("/crops", response_model=List[CropDetailResponse], summary="List all crops with full parameters")
 def list_crops(_: Dict[str, Any] = Depends(require_admin)):
-    """Retrieve full catalog of crops including yield and cost estimates."""
+    """Retrieve full catalog of crops including yield, cost, and economic data source."""
     rows = db.fetch_all("""
         SELECT
             crop_id, crop_name, season, duration_days,
             min_ph, max_ph, min_temp, max_temp, min_humidity, max_humidity,
             min_rainfall, max_rainfall, n_required, p_required, k_required,
-            avg_yield_q_per_acre, est_cost_per_acre
+            avg_yield_q_per_acre, est_cost_per_acre, econ_source, econ_year
         FROM crops
         ORDER BY crop_name ASC
     """)
@@ -68,6 +70,8 @@ def list_crops(_: Dict[str, Any] = Depends(require_admin)):
             k_required=int(r["k_required"]) if r.get("k_required") is not None else None,
             avg_yield_q_per_acre=float(r["avg_yield_q_per_acre"]) if r.get("avg_yield_q_per_acre") is not None else None,
             est_cost_per_acre=float(r["est_cost_per_acre"]) if r.get("est_cost_per_acre") is not None else None,
+            econ_source=r.get("econ_source"),
+            econ_year=int(r["econ_year"]) if r.get("econ_year") is not None else None,
         )
         for r in rows
     ]
@@ -81,7 +85,7 @@ def get_crop(crop_id: int, _: Dict[str, Any] = Depends(require_admin)):
             crop_id, crop_name, season, duration_days,
             min_ph, max_ph, min_temp, max_temp, min_humidity, max_humidity,
             min_rainfall, max_rainfall, n_required, p_required, k_required,
-            avg_yield_q_per_acre, est_cost_per_acre
+            avg_yield_q_per_acre, est_cost_per_acre, econ_source, econ_year
         FROM crops
         WHERE crop_id = %s
     """, (crop_id,))
@@ -106,12 +110,14 @@ def get_crop(crop_id: int, _: Dict[str, Any] = Depends(require_admin)):
         k_required=int(row["k_required"]) if row.get("k_required") is not None else None,
         avg_yield_q_per_acre=float(row["avg_yield_q_per_acre"]) if row.get("avg_yield_q_per_acre") is not None else None,
         est_cost_per_acre=float(row["est_cost_per_acre"]) if row.get("est_cost_per_acre") is not None else None,
+        econ_source=row.get("econ_source"),
+        econ_year=int(row["econ_year"]) if row.get("econ_year") is not None else None,
     )
 
 
 @router.post("/crops", response_model=CropDetailResponse, status_code=status.HTTP_201_CREATED, summary="Create a new crop")
 def create_crop(payload: CropCreateUpdateRequest, current_admin: Dict[str, Any] = Depends(require_admin)):
-    """Create a new crop with validation on soil, climate, yield, and cost."""
+    """Create a new crop with validation on soil, climate, yield, cost, and economic sources."""
     existing = db.fetch_one("SELECT crop_id FROM crops WHERE LOWER(crop_name) = LOWER(%s)", (payload.crop_name.strip(),))
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Crop '{payload.crop_name}' already exists")
@@ -121,8 +127,9 @@ def create_crop(payload: CropCreateUpdateRequest, current_admin: Dict[str, Any] 
         INSERT INTO crops (
             crop_name, season, duration_days, min_ph, max_ph, min_temp, max_temp,
             min_humidity, max_humidity, min_rainfall, max_rainfall,
-            n_required, p_required, k_required, avg_yield_q_per_acre, est_cost_per_acre
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            n_required, p_required, k_required, avg_yield_q_per_acre, est_cost_per_acre,
+            econ_source, econ_year
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
     params = (
         payload.crop_name.strip(), payload.season, payload.duration_days,
@@ -130,6 +137,8 @@ def create_crop(payload: CropCreateUpdateRequest, current_admin: Dict[str, Any] 
         payload.min_humidity, payload.max_humidity, payload.min_rainfall, payload.max_rainfall,
         payload.n_required, payload.p_required, payload.k_required,
         payload.avg_yield_q_per_acre, payload.est_cost_per_acre,
+        payload.econ_source.strip() if payload.econ_source else None,
+        payload.econ_year,
     )
     new_id, _ = db.execute_admin_query(query, params, admin_farmer_id=admin_id)
     return get_crop(new_id, current_admin)
@@ -137,7 +146,7 @@ def create_crop(payload: CropCreateUpdateRequest, current_admin: Dict[str, Any] 
 
 @router.put("/crops/{crop_id}", response_model=CropDetailResponse, summary="Update crop details")
 def update_crop(crop_id: int, payload: CropCreateUpdateRequest, current_admin: Dict[str, Any] = Depends(require_admin)):
-    """Update existing crop parameters. Automatically logs changes to admin_audit_log via triggers."""
+    """Update existing crop parameters including econ_source and econ_year."""
     existing = db.fetch_one("SELECT crop_id FROM crops WHERE crop_id = %s", (crop_id,))
     if not existing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Crop #{crop_id} not found")
@@ -149,7 +158,8 @@ def update_crop(crop_id: int, payload: CropCreateUpdateRequest, current_admin: D
             min_ph = %s, max_ph = %s, min_temp = %s, max_temp = %s,
             min_humidity = %s, max_humidity = %s, min_rainfall = %s, max_rainfall = %s,
             n_required = %s, p_required = %s, k_required = %s,
-            avg_yield_q_per_acre = %s, est_cost_per_acre = %s
+            avg_yield_q_per_acre = %s, est_cost_per_acre = %s,
+            econ_source = %s, econ_year = %s
         WHERE crop_id = %s
     """
     params = (
@@ -158,6 +168,8 @@ def update_crop(crop_id: int, payload: CropCreateUpdateRequest, current_admin: D
         payload.min_humidity, payload.max_humidity, payload.min_rainfall, payload.max_rainfall,
         payload.n_required, payload.p_required, payload.k_required,
         payload.avg_yield_q_per_acre, payload.est_cost_per_acre,
+        payload.econ_source.strip() if payload.econ_source else None,
+        payload.econ_year,
         crop_id,
     )
     db.execute_admin_query(query, params, admin_farmer_id=admin_id)
@@ -834,4 +846,69 @@ async def upload_market_prices_csv(
         total_rows=total_rows,
         imported=imported,
         errors=errors,
+    )
+
+
+# =============================================================================
+# 10. Data Quality Monitoring
+# =============================================================================
+
+@router.get(
+    "/data-quality",
+    response_model=DataQualityResponse,
+    summary="Inspect data quality issues across crops",
+)
+def get_data_quality(_: Dict[str, Any] = Depends(require_admin)):
+    """Return crops missing economic source citations and crops missing market price data."""
+    total_crops_row = db.fetch_one("SELECT COUNT(*) AS total FROM crops")
+    total_crops = int(total_crops_row["total"]) if total_crops_row else 0
+
+    # 1. Crops with no econ_source
+    missing_econ_rows = db.fetch_all("""
+        SELECT crop_id, crop_name, season, avg_yield_q_per_acre, est_cost_per_acre, econ_source, econ_year
+        FROM crops
+        WHERE econ_source IS NULL OR TRIM(econ_source) = ''
+        ORDER BY crop_name ASC
+    """)
+    missing_econ = [
+        DataQualityCropItem(
+            crop_id=int(r["crop_id"]),
+            crop_name=r["crop_name"],
+            season=r.get("season"),
+            avg_yield_q_per_acre=float(r["avg_yield_q_per_acre"]) if r.get("avg_yield_q_per_acre") is not None else None,
+            est_cost_per_acre=float(r["est_cost_per_acre"]) if r.get("est_cost_per_acre") is not None else None,
+            econ_source=r.get("econ_source"),
+            econ_year=r.get("econ_year"),
+            has_price_data=False,
+        )
+        for r in missing_econ_rows
+    ]
+
+    # 2. Crops with no price data in market_prices
+    missing_price_rows = db.fetch_all("""
+        SELECT c.crop_id, c.crop_name, c.season, c.avg_yield_q_per_acre, c.est_cost_per_acre, c.econ_source, c.econ_year
+        FROM crops c
+        WHERE c.crop_id NOT IN (
+            SELECT DISTINCT crop_id FROM market_prices WHERE crop_id IS NOT NULL
+        )
+        ORDER BY crop_name ASC
+    """)
+    missing_price = [
+        DataQualityCropItem(
+            crop_id=int(r["crop_id"]),
+            crop_name=r["crop_name"],
+            season=r.get("season"),
+            avg_yield_q_per_acre=float(r["avg_yield_q_per_acre"]) if r.get("avg_yield_q_per_acre") is not None else None,
+            est_cost_per_acre=float(r["est_cost_per_acre"]) if r.get("est_cost_per_acre") is not None else None,
+            econ_source=r.get("econ_source"),
+            econ_year=r.get("econ_year"),
+            has_price_data=False,
+        )
+        for r in missing_price_rows
+    ]
+
+    return DataQualityResponse(
+        missing_econ_source=missing_econ,
+        missing_price_data=missing_price,
+        total_crops=total_crops,
     )

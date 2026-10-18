@@ -76,6 +76,14 @@ class SQLiteTestCursor:
             self._handle_profit_for_recommendations(params)
             return self
 
+        if re.match(r'^\s*CALL\s+explain_crop_for_farm', query, flags=re.IGNORECASE):
+            self._handle_explain_crop_for_farm(params)
+            return self
+
+        if re.match(r'^\s*CALL\s+explain_crop_fit', query, flags=re.IGNORECASE):
+            self._handle_explain_crop_fit(params)
+            return self
+
         # 3. Translate MySQL syntax to SQLite
         sqlite_query = query.replace("%s", "?")
 
@@ -960,6 +968,139 @@ class SQLiteTestCursor:
 
         self._proc_results = results
 
+    def _handle_explain_crop_fit(self, params: Any):
+        crop_id, ph, n, p, k, temp, humidity, rainfall = (
+            int(params[0]),
+            float(params[1]),
+            float(params[2]),
+            float(params[3]),
+            float(params[4]),
+            float(params[5]),
+            float(params[6]),
+            float(params[7]),
+        )
+        if ph < 0.0 or ph > 14.0:
+            raise DatabaseProcedureError("pH must be between 0 and 14", sqlstate="45000")
+        if n < 0 or p < 0 or k < 0:
+            raise DatabaseProcedureError("Nutrient values (N, P, K) cannot be negative", sqlstate="45000")
+        if temp < -10.0 or temp > 60.0:
+            raise DatabaseProcedureError("Temperature out of valid range (-10 to 60)", sqlstate="45000")
+        if humidity < 0.0 or humidity > 100.0:
+            raise DatabaseProcedureError("Humidity must be between 0 and 100", sqlstate="45000")
+        if rainfall < 0.0:
+            raise DatabaseProcedureError("Rainfall cannot be negative", sqlstate="45000")
+
+        c_row = self.raw_cursor.execute("SELECT * FROM crops WHERE crop_id = ?", (crop_id,)).fetchone()
+        if not c_row:
+            raise DatabaseProcedureError(f"Crop {crop_id} not found", sqlstate="45000")
+
+        c = dict(c_row) if hasattr(c_row, "keys") else {
+            "crop_id": c_row[0], "crop_name": c_row[1], "season": c_row[2], "duration_days": c_row[3],
+            "min_ph": c_row[4], "max_ph": c_row[5], "min_temp": c_row[6], "max_temp": c_row[7],
+            "min_humidity": c_row[8], "max_humidity": c_row[9], "min_rainfall": c_row[10],
+            "max_rainfall": c_row[11], "n_required": c_row[12], "p_required": c_row[13], "k_required": c_row[14],
+        }
+
+        def eval_range(val, min_val, max_val, weight):
+            if min_val <= val <= max_val:
+                return "ideal", 100.0, min_val, max_val, weight
+            span = max(max_val - min_val, 1.0)
+            if val < min_val:
+                dist = min_val - val
+                score = max(0.0, round(100.0 - 100.0 * dist / span, 1))
+                if score >= 80.0:
+                    status = "slightly_low"
+                elif score >= 40.0:
+                    status = "low"
+                else:
+                    status = "very_low"
+            else:
+                dist = val - max_val
+                score = max(0.0, round(100.0 - 100.0 * dist / span, 1))
+                if score >= 80.0:
+                    status = "slightly_high"
+                elif score >= 40.0:
+                    status = "high"
+                else:
+                    status = "very_high"
+            return status, score, min_val, max_val, weight
+
+        def eval_nutrient(val, req_val, weight):
+            req = float(req_val or 1)
+            if val >= req:
+                score = max(0.0, round(100.0 - 50.0 * (val - req) / req, 1))
+            else:
+                score = max(0.0, round(100.0 * val / req, 1))
+            score = min(100.0, score)
+
+            if val < 0.60 * req:
+                status = "very_low"
+            elif val < 0.90 * req:
+                status = "low"
+            elif val <= 1.50 * req:
+                status = "ok"
+            else:
+                status = "high"
+            return status, score, req, req, weight
+
+        ph_status, ph_score, ph_min, ph_max, ph_wt = eval_range(ph, c["min_ph"], c["max_ph"], 15)
+        temp_status, temp_score, temp_min, temp_max, temp_wt = eval_range(temp, c["min_temp"], c["max_temp"], 20)
+        hum_status, hum_score, hum_min, hum_max, hum_wt = eval_range(humidity, c["min_humidity"], c["max_humidity"], 10)
+        rain_status, rain_score, rain_min, rain_max, rain_wt = eval_range(rainfall, c["min_rainfall"], c["max_rainfall"], 20)
+
+        n_status, n_score, n_min, n_max, n_wt = eval_nutrient(n, c["n_required"], 12)
+        p_status, p_score, p_min, p_max, p_wt = eval_nutrient(p, c["p_required"], 12)
+        k_status, k_score, k_min, k_max, k_wt = eval_nutrient(k, c["k_required"], 11)
+
+        self._proc_results = [
+            {"param_key": "ph", "farm_value": ph, "ideal_min": ph_min, "ideal_max": ph_max, "status": ph_status, "score": ph_score, "weight": ph_wt},
+            {"param_key": "temperature", "farm_value": temp, "ideal_min": temp_min, "ideal_max": temp_max, "status": temp_status, "score": temp_score, "weight": temp_wt},
+            {"param_key": "humidity", "farm_value": humidity, "ideal_min": hum_min, "ideal_max": hum_max, "status": hum_status, "score": hum_score, "weight": hum_wt},
+            {"param_key": "rainfall", "farm_value": rainfall, "ideal_min": rain_min, "ideal_max": rain_max, "status": rain_status, "score": rain_score, "weight": rain_wt},
+            {"param_key": "nitrogen", "farm_value": n, "ideal_min": n_min, "ideal_max": n_max, "status": n_status, "score": n_score, "weight": n_wt},
+            {"param_key": "phosphorus", "farm_value": p, "ideal_min": p_min, "ideal_max": p_max, "status": p_status, "score": p_score, "weight": p_wt},
+            {"param_key": "potassium", "farm_value": k, "ideal_min": k_min, "ideal_max": k_max, "status": k_status, "score": k_score, "weight": k_wt},
+        ]
+
+    def _handle_explain_crop_for_farm(self, params: Any):
+        farm_id = int(params[0])
+        test_id = int(params[1])
+        crop_id = int(params[2])
+
+        f_row = self.raw_cursor.execute("SELECT farm_id FROM farms WHERE farm_id = ?", (farm_id,)).fetchone()
+        if not f_row:
+            raise DatabaseProcedureError("Farm not found", sqlstate="45000")
+
+        st_row = self.raw_cursor.execute(
+            "SELECT ph, nitrogen, phosphorus, potassium FROM soil_tests WHERE test_id = ? AND farm_id = ?",
+            (test_id, farm_id)
+        ).fetchone()
+        if not st_row:
+            raise DatabaseProcedureError("Soil test not found for this farm, or N/P/K/pH is missing", sqlstate="45000")
+
+        st = dict(st_row) if hasattr(st_row, "keys") else {
+            "ph": st_row[0], "nitrogen": st_row[1], "phosphorus": st_row[2], "potassium": st_row[3]
+        }
+        if st["ph"] is None or st["nitrogen"] is None or st["phosphorus"] is None or st["potassium"] is None:
+            raise DatabaseProcedureError("Soil test not found for this farm, or N/P/K/pH is missing", sqlstate="45000")
+
+        w_rows = self.raw_cursor.execute(
+            "SELECT temperature, humidity, rainfall_mm FROM weather_records WHERE farm_id = ? AND record_date >= date('now', '-30 days')",
+            (farm_id,)
+        ).fetchall()
+        if not w_rows:
+            raise DatabaseProcedureError("No recent weather data for this farm (need last 30 days)", sqlstate="45000")
+
+        temps = [r[0] if isinstance(r, (list, tuple)) else r["temperature"] for r in w_rows if (r[0] if isinstance(r, (list, tuple)) else r["temperature"]) is not None]
+        hums = [r[1] if isinstance(r, (list, tuple)) else r["humidity"] for r in w_rows if (r[1] if isinstance(r, (list, tuple)) else r["humidity"]) is not None]
+        rains = [r[2] if isinstance(r, (list, tuple)) else r["rainfall_mm"] for r in w_rows if (r[2] if isinstance(r, (list, tuple)) else r["rainfall_mm"]) is not None]
+
+        avg_t = sum(temps) / len(temps) if temps else 25.0
+        avg_h = sum(hums) / len(hums) if hums else 70.0
+        sum_r = sum(rains) if rains else 100.0
+
+        self._handle_explain_crop_fit((crop_id, st["ph"], st["nitrogen"], st["phosphorus"], st["potassium"], avg_t, avg_h, sum_r))
+
     def fetchone(self) -> Optional[Dict[str, Any]]:
         if self._proc_results:
             return self._proc_results.pop(0)
@@ -1072,7 +1213,9 @@ CREATE TABLE IF NOT EXISTS crops (
     min_rainfall REAL, max_rainfall REAL,
     n_required INTEGER, p_required INTEGER, k_required INTEGER,
     avg_yield_q_per_acre REAL,
-    est_cost_per_acre REAL
+    est_cost_per_acre REAL,
+    econ_source TEXT,
+    econ_year INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS predictions (

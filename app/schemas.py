@@ -276,6 +276,42 @@ class CropScoreBreakdown(BaseModel):
     p_score: float
     k_score: float
     prediction_id: Optional[int] = None
+    econ_source: Optional[str] = None
+    econ_year: Optional[int] = None
+
+
+class WhyCropItem(BaseModel):
+    """Single agronomic factor evaluation item for Why this crop."""
+    param: str
+    value: float
+    ideal_min: Optional[float] = None
+    ideal_max: Optional[float] = None
+    status: str
+    score: float
+    weight: int
+
+
+class WhyCropResponse(BaseModel):
+    """Why this crop explanation response."""
+    crop_id: int
+    crop_name: str
+    summary_level: Literal["strong", "moderate", "weak"]
+    good_count: int
+    items: List[WhyCropItem]
+    tips: List[str]
+
+
+class PublicWhyRequest(BaseModel):
+    """Payload for public POST /public/why."""
+    crop_id: int = Field(..., gt=0, description="Crop ID")
+    ph: float = Field(..., description="Soil pH value (0.0 - 14.0)")
+    n: float = Field(..., description="Soil Nitrogen (kg/ha >= 0)")
+    p: float = Field(..., description="Soil Phosphorus (kg/ha >= 0)")
+    k: float = Field(..., description="Soil Potassium (kg/ha >= 0)")
+    temperature: float = Field(..., description="Ambient Temperature in °C (-10 to 60)")
+    humidity: float = Field(..., description="Relative Humidity percentage (0 - 100)")
+    rainfall: float = Field(..., description="30-day rainfall in mm (>= 0)")
+    lang: Optional[Literal["en", "mr", "hi"]] = Field("en", description="Output language")
 
 
 class RecommendationResponse(BaseModel):
@@ -558,6 +594,8 @@ class CropProfitEstimateResponse(BaseModel):
     price_date: Optional[date] = None
     avg_yield_q_per_acre: Optional[float] = None
     est_cost_per_acre: Optional[float] = None
+    econ_source: Optional[str] = None
+    econ_year: Optional[int] = None
     revenue_per_acre: Optional[float] = None
     profit_per_acre: Optional[float] = None
     profit_per_acre_per_month: Optional[float] = None
@@ -577,6 +615,8 @@ class RecommendationProfitItem(BaseModel):
     price_date: Optional[date] = None
     avg_yield_q_per_acre: Optional[float] = None
     est_cost_per_acre: Optional[float] = None
+    econ_source: Optional[str] = None
+    econ_year: Optional[int] = None
     revenue_per_acre: Optional[float] = None
     profit_per_acre: Optional[float] = None
     profit_per_acre_per_month: Optional[float] = None
@@ -654,6 +694,8 @@ class CropDetailResponse(BaseModel):
     k_required: Optional[int] = None
     avg_yield_q_per_acre: Optional[float] = None
     est_cost_per_acre: Optional[float] = None
+    econ_source: Optional[str] = None
+    econ_year: Optional[int] = None
 
 
 class CropCreateUpdateRequest(BaseModel):
@@ -674,6 +716,8 @@ class CropCreateUpdateRequest(BaseModel):
     k_required: Optional[int] = Field(None, ge=0)
     avg_yield_q_per_acre: Optional[float] = Field(None, ge=0.0)
     est_cost_per_acre: Optional[float] = Field(None, ge=0.0)
+    econ_source: Optional[str] = Field(None, max_length=120)
+    econ_year: Optional[int] = Field(None, ge=1990, le=2100)
 
     @model_validator(mode="after")
     def validate_ranges(self) -> "CropCreateUpdateRequest":
@@ -686,6 +730,25 @@ class CropCreateUpdateRequest(BaseModel):
         if self.min_rainfall is not None and self.max_rainfall is not None and self.min_rainfall > self.max_rainfall:
             raise ValueError("min_rainfall cannot be greater than max_rainfall")
         return self
+
+
+class DataQualityCropItem(BaseModel):
+    """Crop summary for data quality assessment."""
+    crop_id: int
+    crop_name: str
+    season: Optional[str] = None
+    avg_yield_q_per_acre: Optional[float] = None
+    est_cost_per_acre: Optional[float] = None
+    econ_source: Optional[str] = None
+    econ_year: Optional[int] = None
+    has_price_data: bool = False
+
+
+class DataQualityResponse(BaseModel):
+    """Admin data quality report listing gaps in economic and price data."""
+    missing_econ_source: List[DataQualityCropItem]
+    missing_price_data: List[DataQualityCropItem]
+    total_crops: int
 
 
 class CropStageCreateUpdateRequest(BaseModel):

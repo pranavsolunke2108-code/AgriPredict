@@ -1393,8 +1393,127 @@
     </div>
   </footer>
 
-  <script src="/static/js/api.js"></script>
+  <script src="/static/js/api.js?v=20261014_why"></script>
   <script>
+    // Safety fallback in case browser serves cached api.js
+    if (typeof UI !== 'undefined') {
+      if (!UI.renderEconBadge) {
+        UI.renderEconBadge = function(econSource, econYear) {
+          if (econSource && String(econSource).trim()) {
+            const template = (UI.t && UI.t('econ_source_label')) || 'Yield and cost estimate from: {source} ({year})';
+            const label = template
+              .replace('{source}', econSource)
+              .replace('{year}', econYear || '');
+            return `<span class="badge" style="background:var(--primary-subtle); color:var(--primary); font-weight:600; border:1px solid var(--primary); font-size:0.75rem;">${label}</span>`;
+          }
+          return `<span class="badge" style="background:var(--warning-subtle, #FEF3C7); color:var(--warning-terracotta, #B45309); font-weight:600; border:1px solid #FCD34D; font-size:0.75rem;">⚠️ ${(UI.t && UI.t('econ_placeholder_warning')) || 'Sample figures - not verified yet'}</span>`;
+        };
+      }
+
+      if (!UI.renderWhyPanel) {
+        UI.renderWhyPanel = function(data, options = {}) {
+          const summaryText = ((UI.t && UI.t('why_summary_' + data.summary_level)) || 'Match score')
+            .replace('{good}', data.good_count);
+
+          const strengths = (data.items || []).filter(it => it.status === 'ideal' || it.status === 'ok');
+          const watch = (data.items || [])
+            .filter(it => it.status !== 'ideal' && it.status !== 'ok')
+            .sort((a, b) => (a.score || 0) - (b.score || 0));
+
+          const getStatusChip = (status) => {
+            let chipClass = 'why-status-ideal';
+            if (status === 'ideal' || status === 'ok') {
+              chipClass = 'why-status-ideal';
+            } else if (status.startsWith('slightly_')) {
+              chipClass = 'why-status-slightly_low';
+            } else if (status === 'low' || status === 'high') {
+              chipClass = 'why-status-low';
+            } else {
+              chipClass = 'why-status-very_low';
+            }
+            const statusLabel = (UI.t && UI.t('why_status_' + status)) || status;
+            return `<span class="why-status-chip ${chipClass}">${statusLabel}</span>`;
+          };
+
+          const renderItemRow = (it) => {
+            const isNutrient = ['nitrogen', 'phosphorus', 'potassium'].includes(it.param);
+            const localizedParam = (UI.t && UI.t(it.param)) || it.param;
+            const yourValLabel = (UI.t && UI.t('why_your_value')) || 'Yours';
+            const idealLabel = (UI.t && UI.t('why_ideal_range')) || 'Ideal';
+
+            const idealStr = isNutrient
+              ? `${idealLabel}: about ${it.ideal_min}`
+              : `${idealLabel}: ${it.ideal_min} - ${it.ideal_max}`;
+
+            const valuesLine = `${yourValLabel}: ${it.value} / ${idealStr}`;
+
+            return `
+              <div class="why-item-row" style="margin-bottom:0.65rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.35rem 0.6rem; font-size:0.85rem;">
+                  <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+                    <strong style="color:var(--ink);">${localizedParam}</strong>
+                    ${getStatusChip(it.status)}
+                  </div>
+                  <div style="font-size:0.8rem; color:var(--muted); font-weight:500;">
+                    ${valuesLine}
+                  </div>
+                </div>
+                <div class="bar-track" style="margin-top:0.3rem; height:5px; background:var(--border); border-radius:var(--radius-full); overflow:hidden;">
+                  <div class="bar-fill" style="width:${Math.min(100, Math.max(0, it.score))}%; height:100%; border-radius:var(--radius-full);"></div>
+                </div>
+              </div>
+            `;
+          };
+
+          let tipsHtml = '';
+          if (data.tips && data.tips.length > 0) {
+            tipsHtml = `
+              <div class="why-tips-container" style="margin-top:0.75rem; display:flex; flex-direction:column; gap:0.5rem;">
+                ${data.tips.map(tipKey => {
+                  const tipText = (UI.t && UI.t(tipKey)) || tipKey;
+                  let extraAction = '';
+                  if (tipKey === 'why_tip_fertilizer') {
+                    extraAction = `<div style="margin-top:0.35rem;"><a href="/register" style="color:var(--primary); font-weight:700; text-decoration:underline; font-size:0.82rem;">🌿 ${(UI.t && UI.t('fertilizer_plan')) || 'Fertilizer Plan'} &rarr;</a></div>`;
+                  }
+                  return `
+                    <div class="why-tip-box">
+                      <div>💡 ${tipText}</div>
+                      ${extraAction}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `;
+          }
+
+          return `
+            <div class="why-panel" style="font-size:0.85rem; line-height:1.5;">
+              <div style="font-weight:700; color:var(--ink); margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px dashed var(--border);">
+                ${summaryText}
+              </div>
+              ${strengths.length > 0 ? `
+                <div style="margin-bottom:0.85rem;">
+                  <div style="font-size:0.75rem; font-weight:800; color:var(--success); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.45rem; display:flex; align-items:center; gap:0.3rem;">
+                    <span>✓</span> <span>${(UI.t && UI.t('why_strengths')) || 'What matches well'}</span>
+                  </div>
+                  ${strengths.map(renderItemRow).join('')}
+                </div>
+              ` : ''}
+              ${watch.length > 0 ? `
+                <div style="margin-bottom:0.85rem;">
+                  <div style="font-size:0.75rem; font-weight:800; color:var(--warning-terracotta, #C8553D); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.45rem; display:flex; align-items:center; gap:0.3rem;">
+                    <span>⚠️</span> <span>${(UI.t && UI.t('why_watch')) || 'What to watch'}</span>
+                  </div>
+                  ${watch.map(renderItemRow).join('')}
+                </div>
+              ` : ''}
+              ${tipsHtml}
+            </div>
+          `;
+        };
+      }
+    }
+
     // ------------------------------------------------------------------------
     // Public Home Page Logic
     // ------------------------------------------------------------------------
@@ -1558,6 +1677,8 @@
       });
     }
 
+    let lastQuickRecommendParams = null;
+
     // 4. Quick Recommend Submission
     async function handleQuickRecommend(e) {
       e.preventDefault();
@@ -1572,6 +1693,8 @@
       const rainfall = parseFloat(document.getElementById("input-rain").value);
       const seasonVal = document.getElementById("select-season").value || null;
       const lang = API.getLang();
+
+      lastQuickRecommendParams = { ph, n, p, k, temperature, humidity, rainfall, season: seasonVal, lang };
 
       const submitBtn = document.getElementById("quick-btn-submit");
       submitBtn.disabled = true;
@@ -1603,6 +1726,37 @@
         submitBtn.innerHTML = `<span>✨</span> <span data-i18n="check_top_crops">${UI.t("check_top_crops", "Check Top 3 Crops")}</span>`;
       }
     }
+
+    window.loadPublicWhyExplanation = async function(detailsEl, cropId) {
+      const container = document.getElementById(`public-why-${cropId}`);
+      if (!container || container.dataset.loaded === "true") return;
+
+      try {
+        const payload = {
+          crop_id: cropId,
+          ph: lastQuickRecommendParams.ph,
+          n: lastQuickRecommendParams.n,
+          p: lastQuickRecommendParams.p,
+          k: lastQuickRecommendParams.k,
+          temperature: lastQuickRecommendParams.temperature,
+          humidity: lastQuickRecommendParams.humidity,
+          rainfall: lastQuickRecommendParams.rainfall,
+          lang: API.getLang(),
+        };
+        const res = await API.request("/public/why", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        container.innerHTML = UI.renderWhyPanel(res, { isPublic: true });
+        container.dataset.loaded = "true";
+      } catch (err) {
+        container.innerHTML = `
+          <div style="color:var(--danger); font-size:0.85rem; padding:0.5rem 0;">
+            ${err.message || 'Could not load explanation.'}
+          </div>
+        `;
+      }
+    };
 
     function renderQuickResults(crops) {
       const wrap = document.getElementById("quick-results-wrap");
@@ -1655,6 +1809,17 @@
                 <span>${Math.round((c.n_score + c.p_score + c.k_score) / 3)}%</span>
               </div>
             </div>
+
+            <!-- Expandable Why this crop panel -->
+            <details class="why-crop-details" ontoggle="if(this.open) window.loadPublicWhyExplanation(this, ${c.crop_id})">
+              <summary>
+                <span>❓ <strong>${UI.t('why_title', 'Why this crop?')}</strong></span>
+                <span class="toggle-icon">▼</span>
+              </summary>
+              <div class="why-crop-content" id="public-why-${c.crop_id}">
+                <div style="color:var(--muted); font-size:0.85rem; padding:0.5rem 0;">${UI.t('loading', 'Loading...')}</div>
+              </div>
+            </details>
           </div>
         `;
       }).join("");

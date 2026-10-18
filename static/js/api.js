@@ -1370,6 +1370,10 @@ const UI = {
                 `).join("")}
               </tbody>
             </table>
+            <div style="margin-top:0.75rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+              <span style="font-weight:700; color:var(--ink); font-size:0.85rem;">Total Estimated Cost: ${UI.formatCurrency(res.fertilizers.reduce((sum, f) => sum + (f.estimated_cost || 0), 0))}</span>
+              ${UI.renderEconBadge(options.econSource, options.econYear)}
+            </div>
           `;
         } else {
           // Soil already meets needs
@@ -1442,6 +1446,130 @@ const UI = {
 
     UI.openModal("global-fertilizer-modal");
   },
+
+  renderEconBadge(econSource, econYear) {
+    if (econSource && String(econSource).trim()) {
+      const template = UI.t('econ_source_label', 'Yield and cost estimate from: {source} ({year})');
+      const label = template
+        .replace('{source}', econSource)
+        .replace('{year}', econYear || '');
+      return `<span class="badge" style="background:var(--primary-subtle); color:var(--primary); font-weight:600; border:1px solid var(--primary); font-size:0.75rem;">${label}</span>`;
+    }
+    return `<span class="badge" style="background:var(--warning-subtle, #FEF3C7); color:var(--warning-terracotta, #B45309); font-weight:600; border:1px solid #FCD34D; font-size:0.75rem;">⚠️ ${UI.t('econ_placeholder_warning', 'Sample figures - not verified yet')}</span>`;
+  },
+
+  renderWhyPanel(data, options = {}) {
+    const summaryText = (UI.t('why_summary_' + data.summary_level, 'Match score'))
+      .replace('{good}', data.good_count);
+
+    const strengths = (data.items || []).filter(it => it.status === 'ideal' || it.status === 'ok');
+    const watch = (data.items || [])
+      .filter(it => it.status !== 'ideal' && it.status !== 'ok')
+      .sort((a, b) => (a.score || 0) - (b.score || 0));
+
+    const getStatusChip = (status) => {
+      let chipClass = 'why-status-ideal';
+      if (status === 'ideal' || status === 'ok') {
+        chipClass = 'why-status-ideal';
+      } else if (status.startsWith('slightly_')) {
+        chipClass = 'why-status-slightly_low';
+      } else if (status === 'low' || status === 'high') {
+        chipClass = 'why-status-low';
+      } else {
+        chipClass = 'why-status-very_low';
+      }
+      const statusLabel = UI.t('why_status_' + status, status);
+      return `<span class="why-status-chip ${chipClass}">${statusLabel}</span>`;
+    };
+
+    const renderItemRow = (it) => {
+      const isNutrient = ['nitrogen', 'phosphorus', 'potassium'].includes(it.param);
+      const localizedParam = UI.t(it.param, it.param);
+      const yourValLabel = UI.t('why_your_value', 'Yours');
+      const idealLabel = UI.t('why_ideal_range', 'Ideal');
+
+      const idealStr = isNutrient
+        ? `${idealLabel}: about ${it.ideal_min}`
+        : `${idealLabel}: ${it.ideal_min} - ${it.ideal_max}`;
+
+      const valuesLine = `${yourValLabel}: ${it.value} / ${idealStr}`;
+
+      return `
+        <div class="why-item-row" style="margin-bottom:0.65rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.35rem 0.6rem; font-size:0.85rem;">
+            <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+              <strong style="color:var(--ink);">${localizedParam}</strong>
+              ${getStatusChip(it.status)}
+            </div>
+            <div style="font-size:0.8rem; color:var(--muted); font-weight:500;">
+              ${valuesLine}
+            </div>
+          </div>
+          <div class="bar-track" style="margin-top:0.3rem; height:5px; background:var(--border); border-radius:var(--radius-full); overflow:hidden;">
+            <div class="bar-fill" style="width:${Math.min(100, Math.max(0, it.score))}%; height:100%; border-radius:var(--radius-full);"></div>
+          </div>
+        </div>
+      `;
+    };
+
+    let tipsHtml = '';
+    if (data.tips && data.tips.length > 0) {
+      tipsHtml = `
+        <div class="why-tips-container" style="margin-top:0.75rem; display:flex; flex-direction:column; gap:0.5rem;">
+          ${data.tips.map(tipKey => {
+            const tipText = UI.t(tipKey, tipKey);
+            let extraAction = '';
+            if (tipKey === 'why_tip_fertilizer') {
+              if (options.farmId) {
+                const safeName = (data.crop_name || '').replace(/'/g, "\\'");
+                extraAction = `<div style="margin-top:0.35rem;"><a href="javascript:void(0)" onclick="UI.openFertilizerPlanModal({ farmId: ${options.farmId}, cropId: ${data.crop_id}, cropName: '${safeName}' })" style="color:var(--primary); font-weight:700; text-decoration:underline; font-size:0.82rem;">🌿 ${UI.t('fertilizer_plan', 'Fertilizer Plan')} &rarr;</a></div>`;
+              } else {
+                extraAction = `<div style="margin-top:0.35rem;"><a href="/register" style="color:var(--primary); font-weight:700; text-decoration:underline; font-size:0.82rem;">🌿 ${UI.t('fertilizer_plan', 'Fertilizer Plan')} &rarr;</a></div>`;
+              }
+            }
+            return `
+              <div class="why-tip-box">
+                <div>💡 ${tipText}</div>
+                ${extraAction}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="why-panel" style="font-size:0.85rem; line-height:1.5;">
+        <!-- Summary Line -->
+        <div style="font-weight:700; color:var(--ink); margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px dashed var(--border);">
+          ${summaryText}
+        </div>
+
+        <!-- Strengths Group -->
+        ${strengths.length > 0 ? `
+          <div style="margin-bottom:0.85rem;">
+            <div style="font-size:0.75rem; font-weight:800; color:var(--success); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.45rem; display:flex; align-items:center; gap:0.3rem;">
+              <span>✓</span> <span>${UI.t('why_strengths', 'What matches well')}</span>
+            </div>
+            ${strengths.map(renderItemRow).join('')}
+          </div>
+        ` : ''}
+
+        <!-- Watch Group -->
+        ${watch.length > 0 ? `
+          <div style="margin-bottom:0.85rem;">
+            <div style="font-size:0.75rem; font-weight:800; color:var(--warning-terracotta, #C8553D); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.45rem; display:flex; align-items:center; gap:0.3rem;">
+              <span>⚠️</span> <span>${UI.t('why_watch', 'What to watch')}</span>
+            </div>
+            ${watch.map(renderItemRow).join('')}
+          </div>
+        ` : ''}
+
+        <!-- Tips -->
+        ${tipsHtml}
+      </div>
+    `;
+  },
 };
 
 // Auto-initialize theme as early as possible
@@ -1452,4 +1580,11 @@ if (typeof document !== "undefined") {
     UI.initTheme();
   }
 }
+
+// Explicit global exports for browser environments
+if (typeof window !== "undefined") {
+  window.API = API;
+  window.UI = UI;
+}
+
 

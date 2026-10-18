@@ -17,6 +17,8 @@ from pydantic import BaseModel, Field
 from app import db
 from app.db import DatabaseProcedureError
 from app.i18n_defaults import DEFAULT_TRANSLATIONS
+from app.schemas import PublicWhyRequest, WhyCropResponse
+from app.services.why_service import build_why_crop_response
 
 logger = logging.getLogger("agripredict.public")
 
@@ -324,3 +326,105 @@ def get_public_stats():
         "languages_supported": languages_count,
         "recommendations_made": total_recommendations,
     }
+
+
+@router.post(
+    "/why",
+    response_model=WhyCropResponse,
+    summary="Public explanation for why a crop fits given parameters",
+)
+def public_why(payload: PublicWhyRequest, request: Request):
+    """Explain why a crop fits the user-provided parameters.
+
+    - Server-side validates ranges for all parameters.
+    - Rate-limits to 20 requests per minute per IP.
+    - Parameterized execution of stored procedure explain_crop_fit.
+    - Returns localized WhyCropResponse.
+    - Maps procedure errors (SQLSTATE 45000) directly to HTTP 400.
+    """
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    check_ip_rate_limit(client_ip)
+
+    # Server-side Range Validations
+    if not (0.0 <= payload.ph <= 14.0):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="pH must be between 0 and 14",
+        )
+    if payload.n < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nitrogen (N) must be greater than or equal to 0",
+        )
+    if payload.p < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Phosphorus (P) must be greater than or equal to 0",
+        )
+    if payload.k < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Potassium (K) must be greater than or equal to 0",
+        )
+    if not (-10.0 <= payload.temperature <= 60.0):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Temperature must be between -10°C and 60°C",
+        )
+    if not (0.0 <= payload.humidity <= 100.0):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Humidity must be between 0% and 100%",
+        )
+    if payload.rainfall < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rainfall must be greater than or equal to 0 mm",
+        )
+
+    crop = db.fetch_one("SELECT crop_id, crop_name FROM crops WHERE crop_id = %s", (payload.crop_id,))
+    if not crop:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Crop #{payload.crop_id} not found")
+
+    try:
+        raw_rows = db.call_procedure(
+            "explain_crop_fit",
+            (
+                payload.crop_id,
+                payload.ph,
+                payload.n,
+                payload.p,
+                payload.k,
+                payload.temperature,
+                payload.humidity,
+                payload.rainfall,
+            ),
+        )
+    except DatabaseProcedureError as proc_err:
+        if proc_err.sqlstate == "45000" or "45000" in str(proc_err):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=proc_err.message,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Procedure failed: {proc_err.message}",
+        )
+    except Exception as exc:
+        if "45000" in str(exc):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc),
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to explain crop fit: {exc}",
+        )
+
+    target_lang = payload.lang or "en"
+    return build_why_crop_response(
+        crop_id=payload.crop_id,
+        crop_name=crop["crop_name"],
+        raw_rows=raw_rows,
+        lang=target_lang,
+    )

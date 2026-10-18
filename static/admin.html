@@ -157,6 +157,7 @@
       <button type="button" class="admin-nav-tab" onclick="switchAdminTab('prices')">💰 Market Prices</button>
       <button type="button" class="admin-nav-tab" onclick="switchAdminTab('users')">👥 Users</button>
       <button type="button" class="admin-nav-tab" onclick="switchAdminTab('audit')">📜 Audit Log</button>
+      <button type="button" class="admin-nav-tab" onclick="switchAdminTab('quality')">📊 Data Quality</button>
     </div>
 
     <!-- TAB 1: CROPS -->
@@ -422,6 +423,63 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 8: DATA QUALITY -->
+    <div id="tab-quality" class="tab-pane">
+      <div class="grid-2col" style="gap:1.5rem; align-items:start;">
+        <!-- Card 1: Missing Economic Source -->
+        <div class="table-card">
+          <div class="table-toolbar">
+            <div>
+              <h3 style="font-size:1.05rem; font-weight:700;">⚠️ Crops Missing Economic Source</h3>
+              <p style="font-size:0.82rem; color:var(--text-muted);">Crops with yield/cost figures lacking source or publication year citations</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="loadDataQuality()">🔄 Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Crop</th>
+                  <th>Season</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="quality-econ-tbody">
+                <tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Loading data quality records...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Card 2: Missing Price Data -->
+        <div class="table-card">
+          <div class="table-toolbar">
+            <div>
+              <h3 style="font-size:1.05rem; font-weight:700;">📉 Crops with No Mandi Price Data</h3>
+              <p style="font-size:0.82rem; color:var(--text-muted);">Crops without any recorded prices in the market_prices catalog</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="loadDataQuality()">🔄 Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Crop</th>
+                  <th>Season</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="quality-prices-tbody">
+                <tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Loading data quality records...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- MODAL: ADD / EDIT CROP -->
@@ -462,6 +520,16 @@
             <div class="form-group">
               <label class="form-label" for="crop-cost">Est Cost (₹/ac) *</label>
               <input type="number" step="0.1" min="0" id="crop-cost" class="form-control" required placeholder="e.g. 18000">
+            </div>
+          </div>
+          <div class="grid-2col">
+            <div class="form-group">
+              <label class="form-label" for="crop-econ-source">Economic Data Source</label>
+              <input type="text" id="crop-econ-source" class="form-control" placeholder="e.g. MPKV Rahuri / ICAR">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="crop-econ-year">Economic Data Year</label>
+              <input type="number" min="2000" max="2100" id="crop-econ-year" class="form-control" placeholder="e.g. 2024">
             </div>
           </div>
           <div class="grid-2col">
@@ -664,7 +732,7 @@
     </div>
   </div>
 
-  <script src="/static/js/api.js"></script>
+  <script src="/static/js/api.js?v=20261014_why"></script>
   <script>
     let globalCrops = [];
     let selectedCsvFile = null;
@@ -708,6 +776,10 @@
 
       const targetPane = document.getElementById(`tab-${tabKey}`);
       if (targetPane) targetPane.classList.add("active");
+
+      if (tabKey === "quality") {
+        loadDataQuality();
+      }
     }
 
     // ==========================================
@@ -771,6 +843,8 @@
       document.getElementById("crop-modal-title").textContent = "Add New Crop";
       document.getElementById("crop-id-input").value = "";
       document.getElementById("crop-form").reset();
+      document.getElementById("crop-econ-source").value = "";
+      document.getElementById("crop-econ-year").value = "";
       UI.clearAlert("crop-modal-alert");
       UI.openModal("crop-modal");
     }
@@ -783,6 +857,8 @@
       document.getElementById("crop-duration").value = c.duration_days;
       document.getElementById("crop-yield").value = c.avg_yield_q_per_acre ?? "";
       document.getElementById("crop-cost").value = c.est_cost_per_acre ?? "";
+      document.getElementById("crop-econ-source").value = c.econ_source ?? "";
+      document.getElementById("crop-econ-year").value = c.econ_year ?? "";
       document.getElementById("crop-min-ph").value = c.min_ph ?? "";
       document.getElementById("crop-max-ph").value = c.max_ph ?? "";
       document.getElementById("crop-min-temp").value = c.min_temp ?? "";
@@ -796,6 +872,13 @@
       document.getElementById("crop-k").value = c.k_required ?? "";
       UI.clearAlert("crop-modal-alert");
       UI.openModal("crop-modal");
+    }
+
+    function openEditCropById(cropId) {
+      const crop = (globalCrops || []).find(c => c.crop_id === cropId);
+      if (crop) {
+        openEditCropModal(crop);
+      }
     }
 
     async function handleSaveCrop(e) {
@@ -823,12 +906,17 @@
         return;
       }
 
+      const econSourceVal = document.getElementById("crop-econ-source").value.trim();
+      const econYearVal = document.getElementById("crop-econ-year").value;
+
       const payload = {
         crop_name: document.getElementById("crop-name").value.trim(),
         season: document.getElementById("crop-season").value,
         duration_days: parseInt(document.getElementById("crop-duration").value),
         avg_yield_q_per_acre: document.getElementById("crop-yield").value ? parseFloat(document.getElementById("crop-yield").value) : null,
         est_cost_per_acre: document.getElementById("crop-cost").value ? parseFloat(document.getElementById("crop-cost").value) : null,
+        econ_source: econSourceVal || null,
+        econ_year: econYearVal ? parseInt(econYearVal) : null,
         min_ph: minPh,
         max_ph: maxPh,
         min_temp: minTemp,
@@ -853,8 +941,61 @@
         UI.closeModal("crop-modal");
         await loadAllCrops();
         await loadAdminAuditLog();
+        loadDataQuality();
       } catch (err) {
         UI.showAlert("crop-modal-alert", err.message || "Failed to save crop.");
+      }
+    }
+
+    async function loadDataQuality() {
+      const econTbody = document.getElementById("quality-econ-tbody");
+      const pricesTbody = document.getElementById("quality-prices-tbody");
+      if (!econTbody || !pricesTbody) return;
+
+      econTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Loading...</td></tr>';
+      pricesTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Loading...</td></tr>';
+
+      try {
+        const res = await API.request("/admin/data-quality");
+
+        // Render missing econ source
+        if (!res.missing_econ_source || res.missing_econ_source.length === 0) {
+          econTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--success); font-weight:600;">✓ All crops have economic data sources recorded!</td></tr>';
+        } else {
+          econTbody.innerHTML = res.missing_econ_source.map(c => `
+            <tr>
+              <td><strong>#${c.crop_id}</strong></td>
+              <td><strong>${c.crop_name}</strong></td>
+              <td><span class="badge badge-growing">${c.season}</span></td>
+              <td>
+                <button class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:0.2rem 0.5rem;" onclick="openEditCropById(${c.crop_id})">
+                  ✏️ Edit
+                </button>
+              </td>
+            </tr>
+          `).join("");
+        }
+
+        // Render missing price data
+        if (!res.missing_price_data || res.missing_price_data.length === 0) {
+          pricesTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--success); font-weight:600;">✓ All crops have mandi price data!</td></tr>';
+        } else {
+          pricesTbody.innerHTML = res.missing_price_data.map(c => `
+            <tr>
+              <td><strong>#${c.crop_id}</strong></td>
+              <td><strong>${c.crop_name}</strong></td>
+              <td><span class="badge badge-growing">${c.season}</span></td>
+              <td>
+                <button class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:0.2rem 0.5rem;" onclick="switchAdminTab('prices')">
+                  💰 View Prices
+                </button>
+              </td>
+            </tr>
+          `).join("");
+        }
+      } catch (err) {
+        econTbody.innerHTML = `<tr><td colspan="4" style="color:var(--danger); padding:1rem;">Error: ${err.message}</td></tr>`;
+        pricesTbody.innerHTML = `<tr><td colspan="4" style="color:var(--danger); padding:1rem;">Error: ${err.message}</td></tr>`;
       }
     }
 
