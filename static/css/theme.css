@@ -54,6 +54,14 @@
   --season-current: var(--season-kharif);
   --season-current-bg: var(--season-kharif-bg);
 
+  /* Semantic Landing Page Aliases (Auto-adapting to light & dark themes) */
+  --text-main: var(--ink);
+  --text-muted: var(--muted);
+  --bg-page: var(--bg);
+  --primary-bg: var(--primary-subtle);
+  --primary-dark: var(--primary-hover);
+  --primary-light: var(--primary);
+
   /* --- Public Hero & Sky Tokens --- */
   --hero-fg: #FFFFFF;
   --hero-fg-muted: rgba(255, 255, 255, 0.9);

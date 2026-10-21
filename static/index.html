@@ -9,6 +9,17 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="/static/css/theme.css">
+  <script>
+    (function() {
+      try {
+        const saved = localStorage.getItem("agripredict_theme");
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = saved || (prefersDark ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+        if (theme === "dark") document.documentElement.classList.add("theme-dark");
+      } catch (e) {}
+    })();
+  </script>
   <style>
     /* Public Home Page Specific Aesthetics & Interactive Styles */
     :root {
@@ -65,6 +76,35 @@
       align-items: center;
       gap: 0.75rem;
     }
+    .theme-toggle-btn {
+      width: 38px;
+      height: 38px;
+      min-height: 38px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 1.15rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      padding: 0;
+      box-shadow: var(--shadow-sm);
+    }
+    .theme-toggle-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--border-strong);
+      transform: scale(1.05);
+    }
+    .theme-toggle-btn:active {
+      transform: scale(0.95);
+    }
+    .theme-toggle-btn:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
     .btn-outline-login {
       border: 1.5px solid var(--primary);
       color: var(--primary);
@@ -82,14 +122,14 @@
     }
     .btn-outline-login:hover {
       background: var(--primary-bg);
-      color: var(--primary-dark);
+      color: var(--primary);
     }
     .user-avatar-btn {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      background: #f1f5f9;
-      border: 1px solid #cbd5e1;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
       border-radius: var(--radius-full);
       padding: 0.25rem 0.75rem 0.25rem 0.35rem;
       cursor: pointer;
@@ -100,14 +140,14 @@
       transition: background 0.2s;
     }
     .user-avatar-btn:hover {
-      background: #e2e8f0;
+      background: var(--surface-hover);
     }
     .user-avatar-circle {
       width: 28px;
       height: 28px;
       border-radius: 50%;
       background: var(--primary);
-      color: #fff;
+      color: var(--primary-contrast);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -308,7 +348,7 @@
     /* Interactive "Try it now" Quick-Recommend Card */
     .try-it-section {
       padding: 3.5rem 1.5rem;
-      background: #f8fafc;
+      background: var(--surface-alt);
     }
     .section-wrap {
       max-width: 1200px;
@@ -332,10 +372,10 @@
     }
 
     .try-card {
-      background: #ffffff;
+      background: var(--surface);
       border-radius: var(--radius-lg);
       border: 1px solid var(--border);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+      box-shadow: var(--shadow-md);
       padding: 2rem;
     }
     .sliders-grid {
@@ -377,7 +417,7 @@
       appearance: none;
       width: 100%;
       height: 6px;
-      background: #e2e8f0;
+      background: var(--border-strong);
       border-radius: 999px;
       outline: none;
       cursor: pointer;
@@ -405,7 +445,7 @@
       margin-top: 2rem;
     }
     .crop-result-card {
-      background: #ffffff;
+      background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: var(--radius-md);
       padding: 1.5rem;
@@ -420,8 +460,8 @@
       box-shadow: var(--shadow-md);
     }
     .crop-result-card.rank-1 {
-      border-color: #10b981;
-      background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 50%);
+      border-color: var(--primary);
+      background: linear-gradient(180deg, var(--season-kharif-bg) 0%, var(--surface) 60%);
     }
     .crop-rank-badge {
       display: inline-block;
@@ -435,6 +475,9 @@
     .rank-1 .crop-rank-badge { background: #dcfce7; color: #15803d; }
     .rank-2 .crop-rank-badge { background: #e0f2fe; color: #0369a1; }
     .rank-3 .crop-rank-badge { background: #fef3c7; color: #b45309; }
+    [data-theme="dark"] .rank-1 .crop-rank-badge { background: var(--season-kharif-bg); color: var(--primary); }
+    [data-theme="dark"] .rank-2 .crop-rank-badge { background: var(--season-annual-bg); color: var(--info-water); }
+    [data-theme="dark"] .rank-3 .crop-rank-badge { background: var(--season-rabi-bg); color: var(--accent-gold); }
 
     .crop-result-name {
       font-size: 1.45rem;
@@ -459,7 +502,7 @@
     }
     .score-bar-track {
       height: 10px;
-      background: #e2e8f0;
+      background: var(--border-strong);
       border-radius: 999px;
       overflow: hidden;
     }
@@ -492,7 +535,7 @@
     /* Sowing Now Section */
     .sowing-section {
       padding: 3.5rem 1.5rem;
-      background: #ffffff;
+      background: var(--surface);
     }
     .sowing-badge {
       display: inline-flex;
@@ -570,7 +613,7 @@
     /* Features Grid */
     .features-section {
       padding: 4rem 1.5rem;
-      background: #f8fafc;
+      background: var(--surface-alt);
     }
     .features-grid {
       display: grid;
@@ -578,7 +621,7 @@
       gap: 1.75rem;
     }
     .feature-card {
-      background: #ffffff;
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       padding: 2rem;
@@ -617,7 +660,7 @@
     /* How It Works Strip */
     .how-section {
       padding: 4rem 1.5rem;
-      background: #ffffff;
+      background: var(--surface);
       border-top: 1px solid var(--border);
     }
     .steps-strip {
@@ -660,7 +703,7 @@
     /* Mandi Highlights (Sample Data Badge) */
     .mandi-section {
       padding: 3rem 1.5rem;
-      background: #f1f5f9;
+      background: var(--surface-alt);
       border-top: 1px solid var(--border);
     }
     .sample-badge {
@@ -677,6 +720,11 @@
       margin-left: 0.5rem;
       vertical-align: middle;
     }
+    [data-theme="dark"] .sample-badge {
+      background: var(--warning-subtle);
+      color: var(--accent-gold);
+      border-color: var(--border-strong);
+    }
     .mandi-cards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -684,7 +732,7 @@
       margin-top: 1.5rem;
     }
     .mandi-card {
-      background: #ffffff;
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
       padding: 1.25rem;
@@ -919,6 +967,11 @@
       </ul>
 
       <div class="header-actions">
+        <!-- Theme Toggle Button -->
+        <button type="button" id="theme-toggle-btn" class="btn btn-ghost btn-icon theme-toggle-btn" onclick="UI.toggleTheme()" title="Switch Theme" aria-label="Toggle Theme">
+          🌙
+        </button>
+
         <!-- Language Switcher -->
         <div class="lang-switch">
           <button type="button" class="lang-btn active" data-lang="en" onclick="UI.switchLanguage('en')">EN</button>
@@ -947,6 +1000,12 @@
         <li><a href="#try-it" data-i18n="try_it_now" onclick="closeMobileMenu()">Try It Now</a></li>
         <li><a href="#sowing-now" data-i18n="sowing_now" onclick="closeMobileMenu()">Sowing Now</a></li>
       </ul>
+      <div style="padding: 0.75rem 0.25rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+        <span style="font-size: 0.95rem; font-weight: 600; color: var(--ink);">Theme</span>
+        <button type="button" class="btn btn-secondary btn-sm mobile-theme-toggle-btn" onclick="UI.toggleTheme()" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.85rem;">
+          <span class="mobile-theme-icon">🌙</span> <span class="mobile-theme-label">Dark Mode</span>
+        </button>
+      </div>
       <div id="mobile-auth-container" class="mobile-auth-container">
         <a href="/ui/login" id="mobile-login-btn" class="btn btn-secondary btn-block" data-i18n="login">Login</a>
         <a href="/ui/register" id="mobile-register-btn" class="btn btn-primary btn-block" data-i18n="register">Sign up</a>
@@ -1922,6 +1981,10 @@
       const urlLang = (urlParams.get("lang") || "").toLowerCase().trim();
       if (urlLang && (urlLang === "en" || urlLang === "mr" || urlLang === "hi")) {
         API.setLang(urlLang);
+      }
+
+      if (typeof UI !== "undefined" && UI.initTheme) {
+        UI.initTheme();
       }
 
       applyTimeOfDaySky();

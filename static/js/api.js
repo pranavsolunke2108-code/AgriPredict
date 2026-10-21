@@ -622,12 +622,20 @@ const UI = {
     } else {
       document.body.classList.remove("theme-dark");
     }
-    const btn = document.getElementById("theme-toggle-btn");
-    if (btn) {
+    const themeBtns = document.querySelectorAll("#theme-toggle-btn, .theme-toggle-btn");
+    themeBtns.forEach(btn => {
       btn.innerHTML = theme === "dark" ? "☀️" : "🌙";
       btn.title = theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode";
       btn.setAttribute("aria-label", btn.title);
-    }
+    });
+    const mobileThemeLabels = document.querySelectorAll(".mobile-theme-label");
+    mobileThemeLabels.forEach(lbl => {
+      lbl.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
+    });
+    const mobileThemeIcons = document.querySelectorAll(".mobile-theme-icon");
+    mobileThemeIcons.forEach(ico => {
+      ico.textContent = theme === "dark" ? "☀️" : "🌙";
+    });
     window.dispatchEvent(new CustomEvent("agri_theme_changed", { detail: { theme } }));
   },
 
