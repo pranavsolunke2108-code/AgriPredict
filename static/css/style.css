@@ -194,7 +194,7 @@ button, input, select, textarea, .nav, .nav-link, .nav-brand, .btn, table, th, t
 /* KPI Summary Cards Grid */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
   gap: 1rem;
   margin-bottom: 1.75rem;
 }
@@ -253,7 +253,7 @@ button, input, select, textarea, .nav, .nav-link, .nav-brand, .btn, table, th, t
 /* Charts Layout */
 .charts-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 1.25rem;
   margin-bottom: 2rem;
 }
@@ -291,7 +291,7 @@ button, input, select, textarea, .nav, .nav-link, .nav-brand, .btn, table, th, t
 /* Active Cycles Grid (Current Status) */
 .cycles-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: 1.25rem;
   margin-bottom: 2.25rem;
 }
@@ -1094,6 +1094,82 @@ body.auth-ready {
   border-radius: var(--radius-sm);
   padding: 0.65rem 0.85rem;
   animation: fadeIn 0.25s ease;
+}
+
+/* ==========================================================================
+   Mobile Responsive Rules in style.css (Synced with theme.css)
+   ========================================================================== */
+@media (max-width: 640px) {
+  .container {
+    padding: 0.75rem 0.75rem calc(var(--bottom-nav-height, 60px) + 2.5rem) 0.75rem !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+    margin-bottom: 0.85rem !important;
+  }
+
+  .kpi-card {
+    padding: 0.65rem 0.75rem !important;
+    border-radius: var(--radius-md) !important;
+    min-height: 0 !important;
+  }
+
+  .kpi-label {
+    font-size: 0.68rem !important;
+    margin-bottom: 0.15rem !important;
+  }
+
+  .kpi-value {
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    word-break: break-all !important;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.85rem !important;
+    margin-bottom: 0.85rem !important;
+  }
+
+  .chart-card {
+    padding: 0.85rem !important;
+  }
+
+  .chart-wrapper {
+    height: 190px !important;
+  }
+
+  .cycles-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.85rem !important;
+    margin-bottom: 0.85rem !important;
+  }
+
+  .table-toolbar {
+    padding: 0.75rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+
+  .table-toolbar .form-control {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+  }
+
+  table.data-table {
+    min-width: 580px !important;
+  }
 }
 
 
