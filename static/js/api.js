@@ -955,7 +955,7 @@ const UI = {
           <button type="button" id="theme-toggle-btn" class="btn btn-ghost btn-icon" onclick="UI.toggleTheme()" title="${curTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}" aria-label="Toggle Theme">
             ${curTheme === 'dark' ? '☀️' : '🌙'}
           </button>
-          <a href="/ui/alerts" class="btn btn-ghost btn-icon nav-bell-link" title="Notifications & Weather Alerts" style="position:relative;">
+          <a href="/ui/alerts" class="btn btn-ghost btn-icon nav-bell-link hide-on-phone" title="Notifications & Weather Alerts" style="position:relative;">
             🔔<span id="nav-unread-badge" class="badge-unread" style="display:none; position:absolute; top:-2px; right:-2px;">0</span>
           </a>
           ${farmer ? `<span class="farmer-name-tag hide-on-phone" style="font-size:0.875rem; font-weight:600; color:var(--ink);">${farmer.name}</span>` : ''}
