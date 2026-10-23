@@ -893,5 +893,5 @@ INSERT INTO translations (text_key, lang, text) VALUES
 ('what_to_grow_next', 'hi', 'आगे क्या उगाएं'), -- [NEEDS REVIEW: Hindi]
 ('yield_kg', 'en', 'Yield (kg)'),
 ('yield_kg', 'mr', 'उत्पादन (किलो)'), -- [NEEDS REVIEW: Marathi]
-('yield_kg', 'hi', 'पैदावार (किग्रा)'), -- [NEEDS REVIEW: Hindi]
-ON DUPLICATE KEY UPDATE text = VALUES(text);
+('yield_kg', 'hi', 'पैदावार (किग्रा)') -- [NEEDS REVIEW: Hindi]
+ON DUPLICATE KEY UPDATE `text` = VALUES(`text`);
